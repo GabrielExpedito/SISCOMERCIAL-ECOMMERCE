@@ -63,8 +63,8 @@
         </dependency>
         <dependency>
             <groupId>dev.langchain4j</groupId>
-            <artifactId>langchain4j-open-ai</artifactId>
-            <version>${langchain4j.version}</version>
+            <artifactId>langchain4j-google-ai-gemini</artifactId>
+            <version>0.35.0</version>
         </dependency>
 
         <!-- Hash de senha do cliente (RF003 7.3) -->

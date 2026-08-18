@@ -1,7 +1,7 @@
 package com.siscomercial.ecommerce.ai;
 
 import dev.langchain4j.model.chat.ChatLanguageModel;
-import dev.langchain4j.model.openai.OpenAiChatModel;
+import dev.langchain4j.model.googleai.GoogleAiGeminiChatModel;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -13,15 +13,22 @@ public class AgenteIAConfig {
 
     @Bean
     public ChatLanguageModel chatLanguageModel(
-            @Value("${siscomercial.ia.openai-api-key:}") String apiKey,
-            @Value("${siscomercial.ia.modelo:gpt-4o-mini}") String modelo) {
+            @Value("${siscomercial.ia.gemini-api-key:}") String apiKey,
+            @Value("${siscomercial.ia.modelo:gemini-3.6-flash}") String modelo) {
+
+        System.out.println("=== CONFIGURACAO IA ===");
+        System.out.println("Modelo: " + modelo);
+        System.out.println("API Key configurada: " +
+                (apiKey != null && !apiKey.isBlank()));
 
         if (apiKey == null || apiKey.isBlank()) {
-            // Sem chave configurada ainda: mantem o backend funcional (ver StubChatLanguageModel).
+            System.out.println("Modo: STUB");
             return new StubChatLanguageModel();
         }
 
-        return OpenAiChatModel.builder()
+        System.out.println("Modo: GEMINI");
+
+        return GoogleAiGeminiChatModel.builder()
                 .apiKey(apiKey)
                 .modelName(modelo)
                 .temperature(0.2)

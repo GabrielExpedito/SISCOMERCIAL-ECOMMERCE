@@ -8,21 +8,24 @@ import com.siscomercial.ecommerce.service.NotaFiscalService;
 import com.siscomercial.ecommerce.service.PedidoService;
 import com.siscomercial.ecommerce.service.ProdutoService;
 import com.siscomercial.ecommerce.service.WhatsAppService;
+import dev.langchain4j.agent.tool.P;
 import dev.langchain4j.agent.tool.Tool;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.math.BigDecimal;
+
 /**
  * Ferramentas (Tools) do agente de IA - secao 9.1 da especificacao.
- *
+ * <p>
  * PRINCIPIO CENTRAL (secao 3 e 3.1 da especificacao):
- *  - O agente NAO acessa o banco de dados diretamente.
- *  - Toda ferramenta aqui apenas CHAMA os servicos de negocio do backend
- *    (ProdutoService, PedidoService, NotaFiscalService, WhatsAppService),
- *    que sao os MESMOS servicos usados pelo REST API do site.
- *  - Consultas executam direto. Alteracoes de dados e operacoes fiscais
- *    passam pelo OperacaoConfirmacaoService e so rodam apos confirmacao
- *    explicita do administrador (RN de seguranca 9.4).
+ * - O agente NAO acessa o banco de dados diretamente.
+ * - Toda ferramenta aqui apenas CHAMA os servicos de negocio do backend
+ * (ProdutoService, PedidoService, NotaFiscalService, WhatsAppService),
+ * que sao os MESMOS servicos usados pelo REST API do site.
+ * - Consultas executam direto. Alteracoes de dados e operacoes fiscais
+ * passam pelo OperacaoConfirmacaoService e so rodam apos confirmacao
+ * explicita do administrador (RN de seguranca 9.4).
  */
 @Component
 @RequiredArgsConstructor
@@ -38,8 +41,8 @@ public class AgenteFerramentas {
     // CONSULTAS - podem ser executadas diretamente (secao 3.1 / 9.4)
     // ---------------------------------------------------------------
 
-    @Tool("Consulta os dados completos de um pedido pelo numero (formato SIS-AAAA-NNNNNN). " +
-          "Retorna status, itens, valores e dados de entrega.")
+    @Tool("Consulta os dados completos de um pedido pelo numero (formato SIS-AAAA-NNNNNN). " + "Retorna status, " +
+            "itens, valores e dados de entrega.")
     public String consultarPedido(String numeroPedido) {
         try {
             Pedido pedido = pedidoService.buscarPorNumero(numeroPedido);
@@ -53,10 +56,9 @@ public class AgenteFerramentas {
     public String consultarProduto(String codigoInterno) {
         try {
             Produto p = produtoService.buscarPorCodigo(codigoInterno);
-            return "Produto %s (%s): status=%s, preco=R$%.2f%s, estoque disponivel=%d".formatted(
-                    p.getNome(), p.getCodigoInterno(), p.getStatus(), p.getPrecoVenda(),
-                    p.isEmPromocao() ? (" (promocional: R$" + p.getPrecoPromocional() + ")") : "",
-                    p.getQuantidadeDisponivel());
+            return "Produto %s (%s): status=%s, preco=R$%.2f%s, estoque disponivel=%d".formatted(p.getNome(),
+                    p.getCodigoInterno(), p.getStatus(), p.getPrecoVenda(), p.isEmPromocao() ?
+                            (" (promocional: R$" + p.getPrecoPromocional() + ")") : "", p.getQuantidadeDisponivel());
         } catch (RecursoNaoEncontradoException e) {
             return "Nao encontrei nenhum produto com o codigo " + codigoInterno + ".";
         }
@@ -66,8 +68,7 @@ public class AgenteFerramentas {
     public String consultarEstoque(String codigoInterno) {
         try {
             Produto p = produtoService.buscarPorCodigo(codigoInterno);
-            return "O produto %s tem %d unidade(s) disponivel(is) (estoque total: %d, reservado: %d).".formatted(
-                    p.getCodigoInterno(), p.getQuantidadeDisponivel(), p.getQuantidadeEstoque(), p.getQuantidadeReservada());
+            return "O produto %s tem %d unidade(s) disponivel(is) (estoque total: %d, reservado: %d).".formatted(p.getCodigoInterno(), p.getQuantidadeDisponivel(), p.getQuantidadeEstoque(), p.getQuantidadeReservada());
         } catch (RecursoNaoEncontradoException e) {
             return "Nao encontrei nenhum produto com o codigo " + codigoInterno + ".";
         }
@@ -83,10 +84,10 @@ public class AgenteFerramentas {
     // ALTERACOES - exigem confirmacao explicita do administrador
     // ---------------------------------------------------------------
 
-    @Tool("Solicita o CANCELAMENTO de um pedido pelo numero. Esta operacao ALTERA DADOS e por isso " +
-          "NAO E EXECUTADA IMEDIATAMENTE: retorna um token de confirmacao. Antes de chamar " +
-          "confirmarOperacao, pergunte ao administrador se ele realmente confirma o cancelamento, " +
-          "informando o numero do pedido e o motivo.")
+    @Tool("Solicita o CANCELAMENTO de um pedido pelo numero. Esta operacao ALTERA DADOS e por isso " + "NAO E " +
+            "EXECUTADA IMEDIATAMENTE: retorna um token de confirmacao. Antes de chamar " + "confirmarOperacao, " +
+            "pergunte ao administrador se ele realmente confirma o cancelamento, " + "informando o numero do pedido e" +
+            " o motivo.")
     public String cancelarPedido(String numeroPedido, String motivo) {
         try {
             Pedido pedido = pedidoService.buscarPorNumero(numeroPedido);
@@ -95,8 +96,8 @@ public class AgenteFerramentas {
                 Pedido cancelado = pedidoService.cancelar(pedido.getId(), motivo);
                 return "Pedido " + cancelado.getNumeroPedido() + " cancelado com sucesso. Status atual: " + cancelado.getStatus() + ".";
             });
-            return "Encontrei o pedido " + numeroPedido + " (status atual: " + pedido.getStatus() + "). " +
-                    "Para confirmar o cancelamento, peca a confirmacao explicita do administrador e depois chame " +
+            return "Encontrei o pedido " + numeroPedido + " (status atual: " + pedido.getStatus() + "). " + "Para " +
+                    "confirmar o cancelamento, peca a confirmacao explicita do administrador e depois chame " +
                     "confirmarOperacao com o token: " + token;
         } catch (RecursoNaoEncontradoException e) {
             return "Nao encontrei nenhum pedido com o numero " + numeroPedido + ". Nada foi alterado.";
@@ -105,9 +106,9 @@ public class AgenteFerramentas {
         }
     }
 
-    @Tool("Solicita a EMISSAO DA NOTA FISCAL de um pedido pelo numero. Operacao FISCAL/FINANCEIRA: " +
-          "exige validacoes adicionais e NAO E EXECUTADA IMEDIATAMENTE - retorna um token de confirmacao. " +
-          "Peca confirmacao explicita do administrador antes de chamar confirmarOperacao.")
+    @Tool("Solicita a EMISSAO DA NOTA FISCAL de um pedido pelo numero. Operacao FISCAL/FINANCEIRA: " + "exige " +
+            "validacoes adicionais e NAO E EXECUTADA IMEDIATAMENTE - retorna um token de confirmacao. " + "Peca " +
+            "confirmacao explicita do administrador antes de chamar confirmarOperacao.")
     public String emitirNotaFiscal(String numeroPedido) {
         try {
             Pedido pedido = pedidoService.buscarPorNumero(numeroPedido);
@@ -116,13 +117,11 @@ public class AgenteFerramentas {
             String token = confirmacaoService.registrarPendencia(resumo, () -> {
                 NotaFiscalService.ResultadoEmissao resultado = notaFiscalService.emitir(pedido);
                 pedidoService.registrarFaturamento(pedido.getId(), resultado.numeroNota(), resultado.chaveAcesso());
-                return "Nota fiscal emitida para o pedido " + pedido.getNumeroPedido() +
-                        ": numero " + resultado.numeroNota() + ", chave " + resultado.chaveAcesso() +
-                        ", situacao " + resultado.situacao() + ".";
+                return "Nota fiscal emitida para o pedido " + pedido.getNumeroPedido() + ": numero " + resultado.numeroNota() + ", chave " + resultado.chaveAcesso() + ", situacao " + resultado.situacao() + ".";
             });
-            return "O pedido " + numeroPedido + " esta apto para faturamento. " +
-                    "Para confirmar a emissao da nota fiscal, peca a confirmacao explicita do administrador " +
-                    "e depois chame confirmarOperacao com o token: " + token;
+            return "O pedido " + numeroPedido + " esta apto para faturamento. " + "Para confirmar a emissao da nota " +
+                    "fiscal, peca a confirmacao explicita do administrador " + "e depois chame confirmarOperacao com " +
+                    "o token: " + token;
         } catch (RecursoNaoEncontradoException e) {
             return "Nao encontrei nenhum pedido com o numero " + numeroPedido + ". Nada foi alterado.";
         } catch (RegraNegocioException e) {
@@ -130,27 +129,82 @@ public class AgenteFerramentas {
         }
     }
 
-    @Tool("Envia um documento (por exemplo, a nota fiscal de um pedido) pelo WhatsApp para um numero de telefone. " +
-          "NAO E EXECUTADO IMEDIATAMENTE - retorna um token de confirmacao. Peca confirmacao explicita do " +
-          "administrador antes de chamar confirmarOperacao.")
+    @Tool("Envia um documento (por exemplo, a nota fiscal de um pedido) pelo WhatsApp para um numero de telefone. " + "NAO E EXECUTADO IMEDIATAMENTE - retorna um token de confirmacao. Peca confirmacao explicita do " + "administrador antes de chamar confirmarOperacao.")
     public String enviarDocumentoWhatsApp(String numeroDestino, String nomeDocumento, String conteudoOuUrlDocumento) {
         String resumo = "Enviar '" + nomeDocumento + "' pelo WhatsApp para " + numeroDestino;
         String token = confirmacaoService.registrarPendencia(resumo, () -> {
-            WhatsAppService.ResultadoEnvio resultado = whatsAppService.enviarDocumento(numeroDestino, nomeDocumento, conteudoOuUrlDocumento);
+            WhatsAppService.ResultadoEnvio resultado = whatsAppService.enviarDocumento(numeroDestino, nomeDocumento,
+                    conteudoOuUrlDocumento);
             return resultado.mensagem();
         });
-        return "Pronto para enviar '" + nomeDocumento + "' pelo WhatsApp para " + numeroDestino + ". " +
-                "Peca confirmacao explicita do administrador e depois chame confirmarOperacao com o token: " + token;
+        return "Pronto para enviar '" + nomeDocumento + "' pelo WhatsApp para " + numeroDestino + ". " + "Peca " +
+                "confirmacao explicita do administrador e depois chame confirmarOperacao com o token: " + token;
+    }
+
+    @Tool("Solicita o CADASTRO de um novo produto no e-commerce. " + "Esta operacao ALTERA DADOS e por isso NAO E " +
+            "EXECUTADA IMEDIATAMENTE: " + "retorna um token de confirmacao. Antes de chamar confirmarOperacao, " +
+            "mostre ao administrador todos os dados do produto e pergunte se ele confirma. " + "Campos obrigatorios: " +
+            "codigo interno, nome, preco de venda e quantidade em estoque. " + "Campos opcionais: descricao, " +
+            "categoria, preco promocional e imagem principal.")
+    public String cadastrarProduto(DadosCadastroProduto dadosCadastroProduto) {
+
+        try {
+            Produto produto = new Produto();
+
+            produto.setCodigoInterno(dadosCadastroProduto.codigoInterno());
+            produto.setNome(dadosCadastroProduto.nome());
+            produto.setDescricao(dadosCadastroProduto.descricao());
+            produto.setPrecoVenda(dadosCadastroProduto.precoVenda());
+            produto.setQuantidadeEstoque(dadosCadastroProduto.quantidadeEstoque());
+            produto.setCategoria(dadosCadastroProduto.categoria());
+            produto.setPrecoPromocional(dadosCadastroProduto.precoPromocional());
+            produto.setImagemPrincipal(dadosCadastroProduto.imagemPrincipal());
+
+            String resumo = """
+                      Cadastrar produto:
+                              Código: %s
+                              Nome: %s
+                              Descrição: %s
+                              Preço de venda: R$%.2f
+                              Estoque: %d
+                              Categoria: %s
+                              Preço promocional: %s
+                              Imagem principal: %s
+                                        
+                    """.formatted(dadosCadastroProduto.codigoInterno(), dadosCadastroProduto.nome(),
+                    dadosCadastroProduto.descricao() != null && !dadosCadastroProduto.descricao().isBlank() ?
+                            dadosCadastroProduto.descricao() : "não " + "informado",
+                    dadosCadastroProduto.precoVenda(), dadosCadastroProduto.quantidadeEstoque(),
+                    dadosCadastroProduto.categoria() != null && !dadosCadastroProduto.categoria().isBlank() ?
+                            dadosCadastroProduto.categoria() : "não informado",
+                    dadosCadastroProduto.precoPromocional() != null ? "R$" + dadosCadastroProduto.precoPromocional()
+                            : "não " + "informado",
+                    dadosCadastroProduto.imagemPrincipal() != null && !dadosCadastroProduto.imagemPrincipal().isBlank()
+                            ? dadosCadastroProduto.imagemPrincipal() : "não informado");
+
+            String token = confirmacaoService.registrarPendencia(resumo, () -> {
+                Produto produtoCadastrado = produtoService.criar(produto);
+
+                return "Produto " + produtoCadastrado.getNome() + " cadastrado com sucesso. " + "Código: " +
+                        produtoCadastrado.getCodigoInterno() + ", status: " + produtoCadastrado.getStatus()
+                        + ", estoque: " + produtoCadastrado.getQuantidadeEstoque() + ".";
+            });
+
+            return "Preparei o cadastro do produto.\n\n" + resumo + "\nPara confirmar o cadastro, peça a confirmação " +
+                    "explícita do administrador " + "e depois chame confirmarOperacao com o token: " + token;
+        } catch (RegraNegocioException e) {
+            return "Não foi possível preparar o cadastro do produto: " + e.getMessage();
+        }
     }
 
     // ---------------------------------------------------------------
     // CONFIRMACAO - unico caminho para executar operacoes sensiveis
     // ---------------------------------------------------------------
 
-    @Tool("Confirma e EXECUTA de fato uma operacao pendente (cancelamento de pedido, emissao de nota fiscal " +
-          "ou envio de documento pelo WhatsApp), usando o token retornado pela ferramenta correspondente. " +
-          "SO CHAME ESTA FERRAMENTA depois que o administrador confirmar explicitamente, em linguagem natural, " +
-          "que deseja prosseguir com a operacao descrita.")
+    @Tool("Confirma e EXECUTA de fato uma operacao pendente, como cadastro ou alteracao de produto, " + "cancelamento" +
+            " de pedido, emissao de nota fiscal ou envio de documento pelo WhatsApp, " + "usando o token retornado " +
+            "pela ferramenta correspondente. " + "SO CHAME ESTA FERRAMENTA depois que o administrador confirmar " +
+            "explicitamente, em linguagem natural, " + "que deseja prosseguir com a operacao descrita.")
     public String confirmarOperacao(String token) {
         return confirmacaoService.confirmar(token);
     }
@@ -162,11 +216,7 @@ public class AgenteFerramentas {
 
     private String formatarPedido(Pedido pedido) {
         StringBuilder sb = new StringBuilder();
-        sb.append("Pedido ").append(pedido.getNumeroPedido())
-          .append(" - status: ").append(pedido.getStatus())
-          .append(", cliente: ").append(pedido.getCliente().getNomeRazaoSocial())
-          .append(", total: R$").append(pedido.getTotal())
-          .append(", itens: ").append(pedido.getItens().size());
+        sb.append("Pedido ").append(pedido.getNumeroPedido()).append(" - status: ").append(pedido.getStatus()).append(", cliente: ").append(pedido.getCliente().getNomeRazaoSocial()).append(", total: R$").append(pedido.getTotal()).append(", itens: ").append(pedido.getItens().size());
         if (pedido.getNumeroNotaFiscal() != null) {
             sb.append(", nota fiscal: ").append(pedido.getNumeroNotaFiscal());
         }
