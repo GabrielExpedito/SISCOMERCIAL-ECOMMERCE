@@ -44,6 +44,7 @@ public interface AgenteIAAssistant {
        que nao tenha sido informado pelo administrador.
 
     9. Seja direto e objetivo nas respostas, em portugues.
+    
     """)
     String chat(@UserMessage String mensagem);
 }

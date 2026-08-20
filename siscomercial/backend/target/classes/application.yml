@@ -5,6 +5,12 @@ spring:
   profiles:
     active: local
 
+  datasource:
+    url: jdbc:postgresql://localhost:5432/siscomercial
+    username: postgres
+    password: gjrv0907
+    driver-class-name: org.postgresql.Driver
+
   jpa:
     hibernate:
       ddl-auto: update
@@ -14,39 +20,10 @@ spring:
         format_sql: true
 
 ---
-# Perfil LOCAL - roda sem depender do Supabase, usando H2 em memória.
-# Use este perfil para testar o backend e o agente de IA rapidamente.
-spring:
-  config:
-    activate:
-      on-profile: local
-  datasource:
-    url: jdbc:h2:mem:siscomercial;MODE=PostgreSQL
-    driver-class-name: org.h2.Driver
-    username: sa
-    password: ""
-  h2:
-    console:
-      enabled: true
-      path: /h2-console
-
----
-# Perfil SUPABASE - producao / homologacao
-spring:
-  config:
-    activate:
-      on-profile: supabase
-  datasource:
-    url: ${SUPABASE_DB_URL}
-    username: ${SUPABASE_DB_USER}
-    password: ${SUPABASE_DB_PASSWORD}
-    driver-class-name: org.postgresql.Driver
-
----
 siscomercial:
   ia:
     gemini-api-key: ${GEMINI_API_KEY:}
-    modelo: gemini-3.6-flash
+    modelo: gemini-3.5-flash-lite
 
     operacoes-sem-confirmacao:
       - consultarPedido

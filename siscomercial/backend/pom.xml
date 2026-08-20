@@ -48,13 +48,6 @@
             <scope>runtime</scope>
         </dependency>
 
-        <!-- H2 para rodar localmente sem depender do Supabase -->
-        <dependency>
-            <groupId>com.h2database</groupId>
-            <artifactId>h2</artifactId>
-            <scope>runtime</scope>
-        </dependency>
-
         <!-- LangChain4j - núcleo do agente de IA -->
         <dependency>
             <groupId>dev.langchain4j</groupId>

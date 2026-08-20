@@ -1,15 +1,13 @@
 package com.siscomercial.ecommerce.ai;
 
-import java.math.BigDecimal;
-
 public record DadosCadastroProduto(
         String codigoInterno,
         String nome,
         String descricao,
-        BigDecimal precoVenda,
+        Double precoVenda,
         Integer quantidadeEstoque,
         String categoria,
-        BigDecimal precoPromocional,
+        Double precoPromocional,
         String imagemPrincipal
 ) {
 }

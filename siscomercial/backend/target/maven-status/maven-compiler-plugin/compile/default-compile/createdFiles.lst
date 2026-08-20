@@ -9,6 +9,7 @@ com\siscomercial\ecommerce\ai\ConfirmacaoPendente.class
 com\siscomercial\ecommerce\controller\AgenteChatController$MensagemResponse.class
 com\siscomercial\ecommerce\exception\GlobalExceptionHandler.class
 com\siscomercial\ecommerce\service\WhatsAppService.class
+com\siscomercial\ecommerce\ai\DadosCadastroProduto.class
 com\siscomercial\ecommerce\SiscomercialApplication.class
 com\siscomercial\ecommerce\model\Endereco.class
 com\siscomercial\ecommerce\ai\AgenteAssistantFactory.class

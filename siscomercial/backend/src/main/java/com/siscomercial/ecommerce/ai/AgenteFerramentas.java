@@ -142,7 +142,7 @@ public class AgenteFerramentas {
     }
 
     @Tool("Solicita o CADASTRO de um novo produto no e-commerce. " + "Esta operacao ALTERA DADOS e por isso NAO E " +
-            "EXECUTADA IMEDIATAMENTE: " + "retorna um token de confirmacao. Antes de chamar confirmarOperacao, " +
+            "EXECUTADA IMED'I'ATAMENTE: " + "retorna um token de confirmacao. Antes de chamar confirmarOperacao, " +
             "mostre ao administrador todos os dados do produto e pergunte se ele confirma. " + "Campos obrigatorios: " +
             "codigo interno, nome, preco de venda e quantidade em estoque. " + "Campos opcionais: descricao, " +
             "categoria, preco promocional e imagem principal.")
@@ -154,10 +154,12 @@ public class AgenteFerramentas {
             produto.setCodigoInterno(dadosCadastroProduto.codigoInterno());
             produto.setNome(dadosCadastroProduto.nome());
             produto.setDescricao(dadosCadastroProduto.descricao());
-            produto.setPrecoVenda(dadosCadastroProduto.precoVenda());
+            produto.setPrecoVenda(dadosCadastroProduto.precoVenda() != null ? BigDecimal.valueOf(
+                    dadosCadastroProduto.precoVenda()) : null);
             produto.setQuantidadeEstoque(dadosCadastroProduto.quantidadeEstoque());
             produto.setCategoria(dadosCadastroProduto.categoria());
-            produto.setPrecoPromocional(dadosCadastroProduto.precoPromocional());
+            produto.setPrecoPromocional(dadosCadastroProduto.precoPromocional() != null ? BigDecimal.valueOf(
+                    dadosCadastroProduto.precoVenda()) : null);
             produto.setImagemPrincipal(dadosCadastroProduto.imagemPrincipal());
 
             String resumo = """

@@ -14,7 +14,7 @@ public class AgenteIAConfig {
     @Bean
     public ChatLanguageModel chatLanguageModel(
             @Value("${siscomercial.ia.gemini-api-key:}") String apiKey,
-            @Value("${siscomercial.ia.modelo:gemini-3.6-flash}") String modelo) {
+            @Value("${siscomercial.ia.modelo:gemini-3.5-flash-lite}") String modelo) {
 
         System.out.println("=== CONFIGURACAO IA ===");
         System.out.println("Modelo: " + modelo);
@@ -33,6 +33,7 @@ public class AgenteIAConfig {
                 .modelName(modelo)
                 .temperature(0.2)
                 .timeout(Duration.ofSeconds(60))
+                .logRequestsAndResponses(true)
                 .build();
     }
 }
