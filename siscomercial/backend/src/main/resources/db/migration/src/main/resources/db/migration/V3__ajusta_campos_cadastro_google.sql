@@ -1,0 +1,5 @@
+ALTER TABLE cliente
+ALTER COLUMN cpf_cnpj DROP NOT NULL;
+
+ALTER TABLE cliente
+ALTER COLUMN senha_hash DROP NOT NULL;

@@ -28,6 +28,7 @@ com\siscomercial\ecommerce\controller\AgenteChatController.class
 com\siscomercial\ecommerce\service\ClienteService.class
 com\siscomercial\ecommerce\controller\ClienteController.class
 com\siscomercial\ecommerce\model\StatusPedido.class
+com\siscomercial\ecommerce\model\PerfilUsuario.class
 com\siscomercial\ecommerce\ai\AgenteIAConfig.class
 com\siscomercial\ecommerce\model\ItemPedido.class
 com\siscomercial\ecommerce\ai\AgenteIAAssistant.class

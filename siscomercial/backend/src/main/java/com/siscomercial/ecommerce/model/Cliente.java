@@ -19,7 +19,7 @@ public class Cliente {
     @Column(name = "nome_razao_social", nullable = false)
     private String nomeRazaoSocial;
 
-    @Column(name = "cpf_cnpj", nullable = false, unique = true)
+    @Column(name = "cpf_cnpj", unique = true)
     private String cpfCnpj;
 
     @Column(nullable = false, unique = true)
@@ -27,8 +27,11 @@ public class Cliente {
 
     private String telefone;
 
-    @Column(name = "senha_hash", nullable = false)
+    @Column(name = "senha_hash")
     private String senhaHash;
+
+    @Column(name = "google_id", unique = true)
+    private String googleId;
 
     @Column(name = "nome_fantasia")
     private String nomeFantasia;
@@ -44,4 +47,8 @@ public class Cliente {
 
     @OneToMany(mappedBy = "cliente", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Endereco> enderecos = new ArrayList<>();
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private PerfilUsuario perfil = PerfilUsuario.CLIENTE;
 }
