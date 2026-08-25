@@ -1,16 +1,19 @@
 package com.siscomercial.ecommerce.config;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 
 @Configuration
 @EnableWebSecurity
+@RequiredArgsConstructor
 public class SecurityConfig {
+
+    private final CustomOAuth2UserService customOAuth2UserService;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -24,7 +27,7 @@ public class SecurityConfig {
 
                 .authorizeHttpRequests(auth -> auth
 
-                        // Catálogo público
+                        // Catalogo publico
                         .requestMatchers("/api/catalogo/**").permitAll()
 
                         // Cadastro de cliente
@@ -42,23 +45,25 @@ public class SecurityConfig {
                         .requestMatchers("/api/ia/**")
                         .hasRole("ADMIN")
 
-                        // Pedidos e demais recursos
+                        // Pedidos
                         .requestMatchers("/api/pedidos/**")
                         .authenticated()
 
+                        // Clientes
                         .requestMatchers("/api/clientes/**")
                         .authenticated()
 
-                        // Qualquer outra rota
+                        // Demais endpoints
                         .anyRequest()
                         .authenticated()
+                )
+
+                .oauth2Login(oauth -> oauth
+                        .userInfoEndpoint(userInfo -> userInfo
+                                .oidcUserService(customOAuth2UserService)
+                        )
                 );
 
         return http.build();
-    }
-
-    @Bean
-    public BCryptPasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
     }
 }

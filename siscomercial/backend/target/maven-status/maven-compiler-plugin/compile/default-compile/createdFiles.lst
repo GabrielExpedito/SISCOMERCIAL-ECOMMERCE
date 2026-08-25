@@ -16,12 +16,14 @@ com\siscomercial\ecommerce\ai\AgenteAssistantFactory.class
 com\siscomercial\ecommerce\model\HistoricoPreco.class
 com\siscomercial\ecommerce\repository\PedidoRepository.class
 com\siscomercial\ecommerce\service\EstoqueService.class
+com\siscomercial\ecommerce\config\CustomOAuth2UserService.class
 com\siscomercial\ecommerce\model\StatusProduto.class
 com\siscomercial\ecommerce\repository\ClienteRepository.class
 com\siscomercial\ecommerce\model\Pagamento.class
 com\siscomercial\ecommerce\exception\RegraNegocioException.class
 com\siscomercial\ecommerce\service\WhatsAppService$ResultadoEnvio.class
 com\siscomercial\ecommerce\service\FreteService$CotacaoFrete.class
+com\siscomercial\ecommerce\config\SecurityConfig.class
 com\siscomercial\ecommerce\controller\AgenteChatController$MensagemRequest.class
 com\siscomercial\ecommerce\ai\AgenteFerramentas.class
 com\siscomercial\ecommerce\controller\AgenteChatController.class
@@ -37,6 +39,7 @@ com\siscomercial\ecommerce\ai\OperacaoConfirmacaoService.class
 com\siscomercial\ecommerce\repository\MovimentacaoEstoqueRepository.class
 com\siscomercial\ecommerce\service\PedidoService$ItemCarrinho.class
 com\siscomercial\ecommerce\controller\ClienteController$CadastroClienteRequest.class
+com\siscomercial\ecommerce\config\PasswordConfig.class
 com\siscomercial\ecommerce\controller\PedidoController.class
 com\siscomercial\ecommerce\repository\HistoricoPrecoRepository.class
 com\siscomercial\ecommerce\service\NotaFiscalService.class
