@@ -27,41 +27,65 @@ public class SecurityConfig {
 
                 .authorizeHttpRequests(auth -> auth
 
-                        // Catalogo publico
                         .requestMatchers("/api/catalogo/**").permitAll()
 
-                        // Cadastro de cliente
                         .requestMatchers("/api/clientes").permitAll()
 
-                        // OAuth2 / Login
                         .requestMatchers("/oauth2/**").permitAll()
                         .requestMatchers("/login/**").permitAll()
 
-                        // Retaguarda
                         .requestMatchers("/api/retaguarda/**")
                         .hasRole("ADMIN")
 
-                        // Assistente IA
                         .requestMatchers("/api/ia/**")
                         .hasRole("ADMIN")
 
-                        // Pedidos
                         .requestMatchers("/api/pedidos/**")
                         .authenticated()
 
-                        // Clientes
                         .requestMatchers("/api/clientes/**")
                         .authenticated()
 
-                        // Demais endpoints
+                        .requestMatchers("/api/auth/me")
+                        .authenticated()
+
                         .anyRequest()
                         .authenticated()
                 )
 
                 .oauth2Login(oauth -> oauth
+
                         .userInfoEndpoint(userInfo -> userInfo
                                 .oidcUserService(customOAuth2UserService)
                         )
+
+                        .successHandler((request, response, authentication) -> {
+
+                            System.out.println("======================================");
+                            System.out.println("=== LOGIN GOOGLE REALIZADO COM SUCESSO ===");
+                            System.out.println("Usuário: " + authentication.getName());
+                            System.out.println("======================================");
+
+                            response.sendRedirect("http://localhost:5173");
+                        })
+
+                        .failureHandler((request, response, exception) -> {
+
+                            System.out.println("======================================");
+                            System.out.println("=== ERRO NO LOGIN GOOGLE ===");
+                            System.out.println("======================================");
+
+                            exception.printStackTrace();
+
+                            response.sendRedirect(
+                                    "http://localhost:5173/login?erro=google"
+                            );
+                        })
+                )
+
+                .logout(logout -> logout
+                        .logoutSuccessUrl("http://localhost:5173")
+                        .permitAll()
                 );
 
         return http.build();

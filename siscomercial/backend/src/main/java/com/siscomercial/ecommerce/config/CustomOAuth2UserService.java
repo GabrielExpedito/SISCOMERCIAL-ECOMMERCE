@@ -6,7 +6,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.oauth2.client.oidc.userinfo.OidcUserRequest;
 import org.springframework.security.oauth2.client.oidc.userinfo.OidcUserService;
-import org.springframework.security.oauth2.client.userinfo.OAuth2UserService;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.security.oauth2.core.oidc.user.DefaultOidcUser;
 import org.springframework.security.oauth2.core.oidc.user.OidcUser;
@@ -16,12 +15,9 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
-public class CustomOAuth2UserService
-        implements OAuth2UserService<OidcUserRequest, OidcUser> {
+public class CustomOAuth2UserService extends OidcUserService {
 
     private final ClienteService clienteService;
-
-    private final OidcUserService delegate = new OidcUserService();
 
     @Override
     public OidcUser loadUser(OidcUserRequest userRequest)
@@ -31,7 +27,7 @@ public class CustomOAuth2UserService
         System.out.println("=== CUSTOM OIDC USER SERVICE ===");
         System.out.println("======================================");
 
-        OidcUser googleUser = delegate.loadUser(userRequest);
+        OidcUser googleUser = super.loadUser(userRequest);
 
         String googleId = googleUser.getAttribute("sub");
         String email = googleUser.getAttribute("email");
@@ -68,7 +64,8 @@ public class CustomOAuth2UserService
                         )
                 ),
                 googleUser.getIdToken(),
-                googleUser.getUserInfo()
+                googleUser.getUserInfo(),
+                "sub"
         );
     }
 }

@@ -1,9 +1,13 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { api } from './api';
-import AgenteChat from './AgenteChat.jsx';
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { api } from "./api";
+import AgenteChat from "./AgenteChat.jsx";
+import { useAuth } from "./context/AuthContext.jsx";
 
 function formatarPreco(valor) {
-  return Number(valor || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  return Number(valor || 0).toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  });
 }
 
 function imagemProduto(produto) {
@@ -11,12 +15,20 @@ function imagemProduto(produto) {
 }
 
 export default function App() {
+  const {
+    usuario,
+    carregando: carregandoAuth,
+    autenticado,
+    ehAdmin,
+    entrarComGoogle,
+    sair,
+  } = useAuth();
   const [produtos, setProdutos] = useState([]);
   const [carrinho, setCarrinho] = useState([]);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState(null);
   const [mostrarAgente, setMostrarAgente] = useState(false);
-  const [busca, setBusca] = useState('');
+  const [busca, setBusca] = useState("");
 
   const carregarCatalogo = useCallback(async () => {
     try {
@@ -49,7 +61,9 @@ export default function App() {
       const existente = atual.find((i) => i.produto.id === produto.id);
       if (existente) {
         return atual.map((i) =>
-          i.produto.id === produto.id ? { ...i, quantidade: i.quantidade + 1 } : i
+          i.produto.id === produto.id
+            ? { ...i, quantidade: i.quantidade + 1 }
+            : i
         );
       }
       return [...atual, { produto, quantidade: 1 }];
@@ -61,7 +75,9 @@ export default function App() {
   }
 
   const total = carrinho.reduce((soma, item) => {
-    const preco = item.produto.emPromocao ? item.produto.precoPromocional : item.produto.precoVenda;
+    const preco = item.produto.emPromocao
+      ? item.produto.precoPromocional
+      : item.produto.precoVenda;
     return soma + Number(preco || 0) * item.quantidade;
   }, 0);
 
@@ -76,10 +92,51 @@ export default function App() {
           </div>
         </div>
         <div className="topo-acoes">
-          <div className="status-loja"><span /> Loja online</div>
-          <button className={`botao-assistente ${mostrarAgente ? 'ativo' : ''}`} onClick={() => setMostrarAgente((v) => !v)}>
-            <span>✦</span> {mostrarAgente ? 'Ocultar IA' : 'Assistente IA'}
-          </button>
+          <div className="status-loja">
+            <span />
+            Loja online
+          </div>
+
+          {ehAdmin && (
+            <button
+              className={`botao-assistente ${mostrarAgente ? "ativo" : ""}`}
+              onClick={() => setMostrarAgente((v) => !v)}
+            >
+              <span>✦</span>
+              {mostrarAgente ? "Ocultar IA" : "Assistente IA"}
+            </button>
+          )}
+
+          {!carregandoAuth && !autenticado && (
+            <button className="botao-login" onClick={entrarComGoogle}>
+              <span className="google-icone">G</span>
+              Entrar com Google
+            </button>
+          )}
+
+          {!carregandoAuth && autenticado && (
+            <div className="usuario-menu">
+              <div className="usuario-info">
+                <div className="usuario-avatar">
+                  {(usuario?.nomeRazaoSocial || usuario?.email || "U")
+                    .charAt(0)
+                    .toUpperCase()}
+                </div>
+
+                <div className="usuario-texto">
+                  <strong>{usuario?.nomeRazaoSocial || "Usuário"}</strong>
+
+                  <span>
+                    {usuario?.perfil === "ADMIN" ? "Administrador" : "Cliente"}
+                  </span>
+                </div>
+              </div>
+
+              <button className="botao-sair" onClick={sair} title="Sair">
+                Sair
+              </button>
+            </div>
+          )}
         </div>
       </header>
 
@@ -88,24 +145,38 @@ export default function App() {
           <div>
             <span className="eyebrow">CATÁLOGO SISCOMERCIAL</span>
             <h1>Produtos para o seu negócio.</h1>
-            <p>Encontre produtos, consulte estoque e use o assistente inteligente para administrar sua loja.</p>
+            <p>
+              Encontre produtos, consulte estoque e use o assistente inteligente
+              para administrar sua loja.
+            </p>
           </div>
-          <div className="hero-brilho" aria-hidden="true">✦</div>
+          <div className="hero-brilho" aria-hidden="true">
+            ✦
+          </div>
         </section>
 
         <div className="barra-catalogo">
           <div>
             <h2>Produtos em destaque</h2>
-            <span>{produtos.length} produto{produtos.length === 1 ? '' : 's'} disponível{produtos.length === 1 ? '' : 'is'}</span>
+            <span>
+              {produtos.length} produto{produtos.length === 1 ? "" : "s"}{" "}
+              disponível{produtos.length === 1 ? "" : "is"}
+            </span>
           </div>
           <div className="busca">
             <span>⌕</span>
-            <input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar produto..." />
+            <input
+              value={busca}
+              onChange={(e) => setBusca(e.target.value)}
+              placeholder="Buscar produto..."
+            />
           </div>
         </div>
 
         {carregando && <div className="estado">Carregando catálogo...</div>}
-        {erro && <div className="estado erro">Erro ao carregar catálogo: {erro}</div>}
+        {erro && (
+          <div className="estado erro">Erro ao carregar catálogo: {erro}</div>
+        )}
 
         {!carregando && !erro && produtosFiltrados.length === 0 && (
           <div className="estado vazio">Nenhum produto encontrado.</div>
@@ -118,23 +189,46 @@ export default function App() {
               return (
                 <article className="card-produto" key={p.id}>
                   <div className="produto-imagem">
-                    {imagem ? <img src={imagem} alt={p.nome} /> : <span>▧</span>}
+                    {imagem ? (
+                      <img src={imagem} alt={p.nome} />
+                    ) : (
+                      <span>▧</span>
+                    )}
                     {p.emPromocao && <span className="selo">OFERTA</span>}
                   </div>
                   <div className="produto-corpo">
-                    {p.categoria && <span className="categoria">{p.categoria}</span>}
+                    {p.categoria && (
+                      <span className="categoria">{p.categoria}</span>
+                    )}
                     <h3>{p.nome}</h3>
                     <p className="codigo">{p.codigoInterno}</p>
                     {p.descricao && <p className="descricao">{p.descricao}</p>}
                     <div className="preco-area">
-                      {p.emPromocao && <span className="preco-antigo">{formatarPreco(p.precoVenda)}</span>}
-                      <strong>{formatarPreco(p.emPromocao ? p.precoPromocional : p.precoVenda)}</strong>
+                      {p.emPromocao && (
+                        <span className="preco-antigo">
+                          {formatarPreco(p.precoVenda)}
+                        </span>
+                      )}
+                      <strong>
+                        {formatarPreco(
+                          p.emPromocao ? p.precoPromocional : p.precoVenda
+                        )}
+                      </strong>
                     </div>
                     <div className="produto-rodape">
-                      <span className={p.quantidadeDisponivel > 0 ? 'estoque ok' : 'estoque'}>
-                        {p.quantidadeDisponivel > 0 ? `${p.quantidadeDisponivel} em estoque` : 'Sem estoque'}
+                      <span
+                        className={
+                          p.quantidadeDisponivel > 0 ? "estoque ok" : "estoque"
+                        }
+                      >
+                        {p.quantidadeDisponivel > 0
+                          ? `${p.quantidadeDisponivel} em estoque`
+                          : "Sem estoque"}
                       </span>
-                      <button disabled={p.quantidadeDisponivel <= 0} onClick={() => adicionarAoCarrinho(p)}>
+                      <button
+                        disabled={p.quantidadeDisponivel <= 0}
+                        onClick={() => adicionarAoCarrinho(p)}
+                      >
                         + Carrinho
                       </button>
                     </div>
@@ -146,22 +240,49 @@ export default function App() {
 
           <aside className="carrinho">
             <div className="carrinho-titulo">
-              <div><span className="carrinho-icone">🛒</span><h2>Carrinho</h2></div>
-              {carrinho.length > 0 && <span className="contador">{carrinho.length}</span>}
+              <div>
+                <span className="carrinho-icone">🛒</span>
+                <h2>Carrinho</h2>
+              </div>
+              {carrinho.length > 0 && (
+                <span className="contador">{carrinho.length}</span>
+              )}
             </div>
             {carrinho.length === 0 ? (
-              <div className="carrinho-vazio"><span>🛒</span><p>Seu carrinho está vazio.</p><small>Adicione produtos para começar.</small></div>
+              <div className="carrinho-vazio">
+                <span>🛒</span>
+                <p>Seu carrinho está vazio.</p>
+                <small>Adicione produtos para começar.</small>
+              </div>
             ) : (
               <>
                 <ul className="lista-carrinho">
                   {carrinho.map((item) => (
                     <li key={item.produto.id}>
-                      <div><strong>{item.produto.nome}</strong><span>{item.quantidade} × {formatarPreco(item.produto.emPromocao ? item.produto.precoPromocional : item.produto.precoVenda)}</span></div>
-                      <button onClick={() => removerDoCarrinho(item.produto.id)} title="Remover">×</button>
+                      <div>
+                        <strong>{item.produto.nome}</strong>
+                        <span>
+                          {item.quantidade} ×{" "}
+                          {formatarPreco(
+                            item.produto.emPromocao
+                              ? item.produto.precoPromocional
+                              : item.produto.precoVenda
+                          )}
+                        </span>
+                      </div>
+                      <button
+                        onClick={() => removerDoCarrinho(item.produto.id)}
+                        title="Remover"
+                      >
+                        ×
+                      </button>
                     </li>
                   ))}
                 </ul>
-                <div className="total"><span>Total</span><strong>{formatarPreco(total)}</strong></div>
+                <div className="total">
+                  <span>Total</span>
+                  <strong>{formatarPreco(total)}</strong>
+                </div>
                 <button className="finalizar">Finalizar pedido</button>
               </>
             )}

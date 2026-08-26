@@ -10,6 +10,7 @@ C:\Users\Gabriel Expedito\Documents\siscomercial-ecommerce\SISCOMERCIAL-ECOMMERC
 C:\Users\Gabriel Expedito\Documents\siscomercial-ecommerce\SISCOMERCIAL-ECOMMERCE\siscomercial\backend\src\main\java\com\siscomercial\ecommerce\config\PasswordConfig.java
 C:\Users\Gabriel Expedito\Documents\siscomercial-ecommerce\SISCOMERCIAL-ECOMMERCE\siscomercial\backend\src\main\java\com\siscomercial\ecommerce\config\SecurityConfig.java
 C:\Users\Gabriel Expedito\Documents\siscomercial-ecommerce\SISCOMERCIAL-ECOMMERCE\siscomercial\backend\src\main\java\com\siscomercial\ecommerce\controller\AgenteChatController.java
+C:\Users\Gabriel Expedito\Documents\siscomercial-ecommerce\SISCOMERCIAL-ECOMMERCE\siscomercial\backend\src\main\java\com\siscomercial\ecommerce\controller\AuthController.java
 C:\Users\Gabriel Expedito\Documents\siscomercial-ecommerce\SISCOMERCIAL-ECOMMERCE\siscomercial\backend\src\main\java\com\siscomercial\ecommerce\controller\CatalogoController.java
 C:\Users\Gabriel Expedito\Documents\siscomercial-ecommerce\SISCOMERCIAL-ECOMMERCE\siscomercial\backend\src\main\java\com\siscomercial\ecommerce\controller\ClienteController.java
 C:\Users\Gabriel Expedito\Documents\siscomercial-ecommerce\SISCOMERCIAL-ECOMMERCE\siscomercial\backend\src\main\java\com\siscomercial\ecommerce\controller\PedidoController.java
@@ -18,6 +19,7 @@ C:\Users\Gabriel Expedito\Documents\siscomercial-ecommerce\SISCOMERCIAL-ECOMMERC
 C:\Users\Gabriel Expedito\Documents\siscomercial-ecommerce\SISCOMERCIAL-ECOMMERCE\siscomercial\backend\src\main\java\com\siscomercial\ecommerce\exception\RecursoNaoEncontradoException.java
 C:\Users\Gabriel Expedito\Documents\siscomercial-ecommerce\SISCOMERCIAL-ECOMMERCE\siscomercial\backend\src\main\java\com\siscomercial\ecommerce\exception\RegraNegocioException.java
 C:\Users\Gabriel Expedito\Documents\siscomercial-ecommerce\SISCOMERCIAL-ECOMMERCE\siscomercial\backend\src\main\java\com\siscomercial\ecommerce\model\Cliente.java
+C:\Users\Gabriel Expedito\Documents\siscomercial-ecommerce\SISCOMERCIAL-ECOMMERCE\siscomercial\backend\src\main\java\com\siscomercial\ecommerce\model\DTO\UsuarioAtualResponse.java
 C:\Users\Gabriel Expedito\Documents\siscomercial-ecommerce\SISCOMERCIAL-ECOMMERCE\siscomercial\backend\src\main\java\com\siscomercial\ecommerce\model\Endereco.java
 C:\Users\Gabriel Expedito\Documents\siscomercial-ecommerce\SISCOMERCIAL-ECOMMERCE\siscomercial\backend\src\main\java\com\siscomercial\ecommerce\model\FormaPagamento.java
 C:\Users\Gabriel Expedito\Documents\siscomercial-ecommerce\SISCOMERCIAL-ECOMMERCE\siscomercial\backend\src\main\java\com\siscomercial\ecommerce\model\HistoricoPreco.java

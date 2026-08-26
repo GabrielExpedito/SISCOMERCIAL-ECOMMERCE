@@ -20,6 +20,7 @@ com\siscomercial\ecommerce\config\CustomOAuth2UserService.class
 com\siscomercial\ecommerce\model\StatusProduto.class
 com\siscomercial\ecommerce\repository\ClienteRepository.class
 com\siscomercial\ecommerce\model\Pagamento.class
+com\siscomercial\ecommerce\model\DTO\UsuarioAtualResponse.class
 com\siscomercial\ecommerce\exception\RegraNegocioException.class
 com\siscomercial\ecommerce\service\WhatsAppService$ResultadoEnvio.class
 com\siscomercial\ecommerce\service\FreteService$CotacaoFrete.class
@@ -51,5 +52,6 @@ com\siscomercial\ecommerce\controller\PedidoController$CheckoutRequest.class
 com\siscomercial\ecommerce\ai\StubChatLanguageModel.class
 com\siscomercial\ecommerce\service\FreteService.class
 com\siscomercial\ecommerce\exception\RecursoNaoEncontradoException.class
+com\siscomercial\ecommerce\controller\AuthController.class
 com\siscomercial\ecommerce\model\StatusPagamento.class
 com\siscomercial\ecommerce\service\PedidoService.class
