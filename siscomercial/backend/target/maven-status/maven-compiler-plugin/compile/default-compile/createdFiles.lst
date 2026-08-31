@@ -41,6 +41,7 @@ com\siscomercial\ecommerce\repository\MovimentacaoEstoqueRepository.class
 com\siscomercial\ecommerce\service\PedidoService$ItemCarrinho.class
 com\siscomercial\ecommerce\controller\ClienteController$CadastroClienteRequest.class
 com\siscomercial\ecommerce\config\PasswordConfig.class
+com\siscomercial\ecommerce\service\NumeroPedidoService.class
 com\siscomercial\ecommerce\controller\PedidoController.class
 com\siscomercial\ecommerce\repository\HistoricoPrecoRepository.class
 com\siscomercial\ecommerce\service\NotaFiscalService.class

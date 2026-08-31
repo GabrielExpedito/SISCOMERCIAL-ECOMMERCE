@@ -11,7 +11,9 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/** RF003 - 7.2/7.3/7.4 Cadastro/login do cliente e enderecos. */
+/**
+ * RF003 - 7.2/7.3/7.4 Cadastro/login do cliente e enderecos.
+ */
 @Service
 @RequiredArgsConstructor
 public class ClienteService {
@@ -35,7 +37,11 @@ public class ClienteService {
 
     public Cliente buscarPorEmail(String email) {
         return clienteRepository.findByEmail(email)
-                .orElseThrow(() -> new RecursoNaoEncontradoException("Cliente nao encontrado: " + email));
+                .orElseThrow(() ->
+                        new RecursoNaoEncontradoException(
+                                "Cliente nao encontrado: " + email
+                        )
+                );
     }
 
     @Transactional

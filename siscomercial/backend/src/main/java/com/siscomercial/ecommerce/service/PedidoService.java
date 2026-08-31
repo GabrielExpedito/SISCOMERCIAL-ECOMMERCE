@@ -12,9 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.time.Year;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * RF003 - Checkout e Criacao de Pedido.
@@ -34,21 +32,23 @@ public class PedidoService {
     @Value("${siscomercial.estoque.reserva-minutos-expiracao:15}")
     private int minutosExpiracaoReserva;
 
-    private final AtomicInteger sequenciaPedido = new AtomicInteger(1);
+    private final NumeroPedidoService numeroPedidoService;
 
-    public record ItemCarrinho(Long produtoId, int quantidade) {}
+    public record ItemCarrinho(Long produtoId, int quantidade) {
+    }
 
     /**
      * Cria o pedido a partir do carrinho, aplicando as regras RN021 a RN025.
      */
     @Transactional
-    public Pedido criarPedido(Cliente cliente, List<ItemCarrinho> itensCarrinho, Endereco enderecoEntrega, FormaPagamento formaPagamento) {
+    public Pedido criarPedido(Cliente cliente, List<ItemCarrinho> itensCarrinho, Endereco enderecoEntrega,
+                              FormaPagamento formaPagamento) {
         if (itensCarrinho == null || itensCarrinho.isEmpty()) {
             throw new RegraNegocioException("O carrinho esta vazio.");
         }
 
         Pedido pedido = new Pedido();
-        pedido.setNumeroPedido(gerarNumeroPedido());
+        pedido.setNumeroPedido(numeroPedidoService.gerar());
         pedido.setCliente(cliente);
         pedido.setDataHora(LocalDateTime.now());
 
@@ -110,7 +110,9 @@ public class PedidoService {
         return pedidoRepository.save(pedido);
     }
 
-    /** Chamado pelo gateway de pagamento (webhook) quando o pagamento e aprovado. */
+    /**
+     * Chamado pelo gateway de pagamento (webhook) quando o pagamento e aprovado.
+     */
     @Transactional
     public Pedido confirmarPagamentoAprovado(Long pedidoId, String identificadorTransacao) {
         Pedido pedido = buscarPorId(pedidoId);
@@ -127,13 +129,16 @@ public class PedidoService {
         return pedidoRepository.save(pedido);
     }
 
-    /** RN024 - cancelamento so e livre enquanto o pedido nao teve pagamento aprovado. */
+    /**
+     * RN024 - cancelamento so e livre enquanto o pedido nao teve pagamento aprovado.
+     */
     @Transactional
     public Pedido cancelar(Long pedidoId, String motivo) {
         Pedido pedido = buscarPorId(pedidoId);
 
         if (pedido.getStatus() == StatusPedido.ENTREGUE || pedido.getStatus() == StatusPedido.CANCELADO) {
-            throw new RegraNegocioException("Pedido " + pedido.getNumeroPedido() + " nao pode ser cancelado (status atual: " + pedido.getStatus() + ").");
+            throw new RegraNegocioException("Pedido " + pedido.getNumeroPedido() + " nao pode ser cancelado (status " +
+                    "atual: " + pedido.getStatus() + ").");
         }
 
         for (ItemPedido item : pedido.getItens()) {
@@ -141,7 +146,8 @@ public class PedidoService {
                     ? TipoMovimentacaoEstoque.LIBERACAO_RESERVA
                     : TipoMovimentacaoEstoque.CANCELAMENTO;
             estoqueService.registrarMovimentacao(item.getProduto(), tipo, item.getQuantidade(),
-                    pedido.getId(), "Cancelamento pedido " + pedido.getNumeroPedido() + (motivo != null ? " - " + motivo : ""));
+                    pedido.getId(), "Cancelamento pedido " + pedido.getNumeroPedido() + (motivo != null ?
+                            " - " + motivo : ""));
         }
 
         pedido.setStatus(StatusPedido.CANCELADO);
@@ -167,8 +173,7 @@ public class PedidoService {
         pedidoRepository.save(pedido);
     }
 
-    private String gerarNumeroPedido() {
-        int seq = sequenciaPedido.getAndIncrement();
-        return "SIS-" + Year.now() + "-" + String.format("%06d", seq + pedidoRepository.count());
+    public List<Pedido> listarPedidosDoCliente(Long clienteId) {
+        return pedidoRepository.findByClienteIdOrderByDataHoraDesc(clienteId);
     }
 }
