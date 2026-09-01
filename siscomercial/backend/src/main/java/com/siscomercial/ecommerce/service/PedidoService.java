@@ -4,6 +4,7 @@ import com.siscomercial.ecommerce.exception.RecursoNaoEncontradoException;
 import com.siscomercial.ecommerce.exception.RegraNegocioException;
 import com.siscomercial.ecommerce.model.*;
 import com.siscomercial.ecommerce.repository.PedidoRepository;
+import com.siscomercial.ecommerce.repository.HistoricoStatusPedidoRepository;
 import com.siscomercial.ecommerce.repository.ProdutoRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -24,6 +25,7 @@ import java.util.List;
 public class PedidoService {
 
     private final PedidoRepository pedidoRepository;
+    private final HistoricoStatusPedidoRepository historicoStatusPedidoRepository;
     private final ProdutoRepository produtoRepository;
     private final ProdutoService produtoService;
     private final EstoqueService estoqueService;
@@ -107,7 +109,10 @@ public class PedidoService {
         pagamento.setStatus(StatusPagamento.PENDENTE);
         pedido.setPagamento(pagamento);
 
-        return pedidoRepository.save(pedido);
+        Pedido pedidoSalvo = pedidoRepository.save(pedido);
+        registrarHistorico(pedidoSalvo, null, StatusPedido.AGUARDANDO_PAGAMENTO,
+                OrigemAlteracaoStatusPedido.SISTEMA, null);
+        return pedidoSalvo;
     }
 
     /**
@@ -119,7 +124,8 @@ public class PedidoService {
         pedido.getPagamento().setStatus(StatusPagamento.APROVADO);
         pedido.getPagamento().setIdentificadorTransacao(identificadorTransacao);
         pedido.getPagamento().setDataHoraConfirmacao(LocalDateTime.now());
-        pedido.setStatus(StatusPedido.PAGAMENTO_APROVADO);
+        alterarStatus(pedido, StatusPedido.PAGAMENTO_APROVADO,
+                OrigemAlteracaoStatusPedido.INTEGRACAO, "gateway-pagamento");
 
         // reserva vira baixa efetiva de estoque (venda)
         for (ItemPedido item : pedido.getItens()) {
@@ -134,6 +140,11 @@ public class PedidoService {
      */
     @Transactional
     public Pedido cancelar(Long pedidoId, String motivo) {
+        return cancelar(pedidoId, motivo, OrigemAlteracaoStatusPedido.CLIENTE, null);
+    }
+
+    @Transactional
+    public Pedido cancelar(Long pedidoId, String motivo, OrigemAlteracaoStatusPedido origem, String responsavel) {
         Pedido pedido = buscarPorId(pedidoId);
 
         if (pedido.getStatus() == StatusPedido.ENTREGUE || pedido.getStatus() == StatusPedido.CANCELADO) {
@@ -150,7 +161,7 @@ public class PedidoService {
                             " - " + motivo : ""));
         }
 
-        pedido.setStatus(StatusPedido.CANCELADO);
+        alterarStatus(pedido, StatusPedido.CANCELADO, origem, responsavel);
         return pedidoRepository.save(pedido);
     }
 
@@ -167,10 +178,57 @@ public class PedidoService {
     @Transactional
     public void registrarFaturamento(Long pedidoId, String numeroNota, String chaveNota) {
         Pedido pedido = buscarPorId(pedidoId);
+        if (pedido.getStatus() != StatusPedido.EM_SEPARACAO) {
+            throw new RegraNegocioException("Pedido " + pedido.getNumeroPedido()
+                    + " nao esta apto para faturamento (status atual: " + pedido.getStatus() + ").");
+        }
         pedido.setNumeroNotaFiscal(numeroNota);
         pedido.setChaveNotaFiscal(chaveNota);
-        pedido.setStatus(StatusPedido.FATURADO);
+        alterarStatus(pedido, StatusPedido.FATURADO, OrigemAlteracaoStatusPedido.ADMINISTRADOR, null);
         pedidoRepository.save(pedido);
+    }
+
+    /**
+     * Executa uma transicao administrativa ou de integracao, rejeitando atalhos no ciclo (RN026).
+     */
+    @Transactional
+    public Pedido alterarStatus(Long pedidoId, StatusPedido novoStatus,
+                                OrigemAlteracaoStatusPedido origem, String responsavel) {
+        Pedido pedido = buscarPorId(pedidoId);
+        alterarStatus(pedido, novoStatus, origem, responsavel);
+        return pedidoRepository.save(pedido);
+    }
+
+    public List<HistoricoStatusPedido> listarHistorico(Long pedidoId) {
+        buscarPorId(pedidoId);
+        return historicoStatusPedidoRepository.findByPedidoIdOrderByDataHoraAsc(pedidoId);
+    }
+
+    private void alterarStatus(Pedido pedido, StatusPedido novoStatus,
+                               OrigemAlteracaoStatusPedido origem, String responsavel) {
+        StatusPedido statusAtual = pedido.getStatus();
+        if (statusAtual == novoStatus) {
+            throw new RegraNegocioException("O pedido ja esta no status " + novoStatus + ".");
+        }
+        if (!statusAtual.permiteTransicaoPara(novoStatus)) {
+            throw new RegraNegocioException("Transicao invalida para o pedido " + pedido.getNumeroPedido()
+                    + ": " + statusAtual + " -> " + novoStatus + ".");
+        }
+
+        pedido.setStatus(novoStatus);
+        registrarHistorico(pedido, statusAtual, novoStatus, origem, responsavel);
+    }
+
+    private void registrarHistorico(Pedido pedido, StatusPedido statusAnterior, StatusPedido novoStatus,
+                                    OrigemAlteracaoStatusPedido origem, String responsavel) {
+        HistoricoStatusPedido historico = new HistoricoStatusPedido();
+        historico.setPedido(pedido);
+        historico.setStatusAnterior(statusAnterior);
+        historico.setNovoStatus(novoStatus);
+        historico.setDataHora(LocalDateTime.now());
+        historico.setOrigem(origem);
+        historico.setResponsavel(responsavel);
+        historicoStatusPedidoRepository.save(historico);
     }
 
     public List<Pedido> listarPedidosDoCliente(Long clienteId) {

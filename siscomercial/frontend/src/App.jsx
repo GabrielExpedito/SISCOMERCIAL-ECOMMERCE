@@ -29,6 +29,22 @@ export default function App() {
   const [erro, setErro] = useState(null);
   const [mostrarAgente, setMostrarAgente] = useState(false);
   const [busca, setBusca] = useState("");
+  const [mostrarCheckout, setMostrarCheckout] = useState(false);
+  const [enderecoEntrega, setEnderecoEntrega] = useState({
+    cep: "",
+    logradouro: "",
+    numero: "",
+    complemento: "",
+    bairro: "",
+    cidade: "",
+    estado: "",
+  });
+  const [formaPagamento, setFormaPagamento] = useState("PIX");
+  const [cotacaoFrete, setCotacaoFrete] = useState(null);
+  const [carregandoFrete, setCarregandoFrete] = useState(false);
+  const [enviandoPedido, setEnviandoPedido] = useState(false);
+  const [erroCheckout, setErroCheckout] = useState(null);
+  const [pedidoCriado, setPedidoCriado] = useState(null);
 
   const carregarCatalogo = useCallback(async () => {
     try {
@@ -72,6 +88,74 @@ export default function App() {
 
   function removerDoCarrinho(id) {
     setCarrinho((atual) => atual.filter((item) => item.produto.id !== id));
+  }
+
+  function abrirCheckout() {
+    if (!autenticado) {
+      entrarComGoogle();
+      return;
+    }
+
+    setErroCheckout(null);
+    setPedidoCriado(null);
+    setMostrarCheckout(true);
+  }
+
+  function atualizarEndereco(campo, valor) {
+    setEnderecoEntrega((atual) => ({ ...atual, [campo]: valor }));
+    if (campo === "cep") setCotacaoFrete(null);
+  }
+
+  async function cotarFrete() {
+    const cep = enderecoEntrega.cep.replace(/\D/g, "");
+    if (cep.length !== 8) {
+      setErroCheckout("Informe um CEP com 8 dígitos para calcular o frete.");
+      return;
+    }
+
+    try {
+      setCarregandoFrete(true);
+      setErroCheckout(null);
+      const cotacao = await api.calcularFrete(cep);
+      setCotacaoFrete(cotacao);
+    } catch (e) {
+      setCotacaoFrete(null);
+      setErroCheckout(e.message);
+    } finally {
+      setCarregandoFrete(false);
+    }
+  }
+
+  async function finalizarPedido(event) {
+    event.preventDefault();
+    if (!cotacaoFrete) {
+      setErroCheckout("Calcule o frete antes de confirmar o pedido.");
+      return;
+    }
+
+    try {
+      setEnviandoPedido(true);
+      setErroCheckout(null);
+      const pedido = await api.checkout({
+        itens: carrinho.map(({ produto, quantidade }) => ({
+          produtoId: produto.id,
+          quantidade,
+        })),
+        enderecoEntrega: {
+          ...enderecoEntrega,
+          cep: enderecoEntrega.cep.replace(/\D/g, ""),
+          estado: enderecoEntrega.estado.trim().toUpperCase(),
+        },
+        formaPagamento,
+      });
+      setPedidoCriado(pedido);
+      setCarrinho([]);
+      carregarCatalogo();
+    } catch (e) {
+      setErroCheckout(e.message);
+    } finally {
+      setEnviandoPedido(false);
+    }
   }
 
   const total = carrinho.reduce((soma, item) => {
@@ -283,7 +367,9 @@ export default function App() {
                   <span>Total</span>
                   <strong>{formatarPreco(total)}</strong>
                 </div>
-                <button className="finalizar">Finalizar pedido</button>
+                <button className="finalizar" onClick={abrirCheckout}>
+                  Finalizar pedido
+                </button>
               </>
             )}
           </aside>
@@ -291,6 +377,128 @@ export default function App() {
       </main>
 
       {mostrarAgente && <AgenteChat onCatalogoAtualizado={carregarCatalogo} />}
+
+      {mostrarCheckout && (
+        <div className="checkout-backdrop" role="presentation">
+          <section
+            className="checkout-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="checkout-titulo"
+          >
+            <button
+              className="checkout-fechar"
+              onClick={() => setMostrarCheckout(false)}
+              aria-label="Fechar checkout"
+            >
+              ×
+            </button>
+
+            {pedidoCriado ? (
+              <div className="pedido-sucesso">
+                <span>✓</span>
+                <p className="eyebrow">PEDIDO CRIADO</p>
+                <h2>Recebemos seu pedido!</h2>
+                <strong>{pedidoCriado.numeroPedido}</strong>
+                <p>
+                  Total de {formatarPreco(pedidoCriado.total)}. Aguarde a
+                  confirmação do pagamento para o pedido seguir para separação.
+                </p>
+                <button className="finalizar" onClick={() => setMostrarCheckout(false)}>
+                  Continuar comprando
+                </button>
+              </div>
+            ) : (
+              <form onSubmit={finalizarPedido}>
+                <div className="checkout-cabecalho">
+                  <p className="eyebrow">CHECKOUT SEGURO</p>
+                  <h2 id="checkout-titulo">Finalizar pedido</h2>
+                  <p>Confirme a entrega, o frete e a forma de pagamento.</p>
+                </div>
+
+                <div className="checkout-grid">
+                  <div className="checkout-campos">
+                    <h3>Endereço de entrega</h3>
+                    <div className="campos-linha cep-linha">
+                      <label>
+                        CEP
+                        <input
+                          required
+                          inputMode="numeric"
+                          maxLength="9"
+                          value={enderecoEntrega.cep}
+                          onChange={(e) => atualizarEndereco("cep", e.target.value)}
+                          onBlur={cotarFrete}
+                          placeholder="00000-000"
+                        />
+                      </label>
+                      <button type="button" className="botao-secundario" onClick={cotarFrete} disabled={carregandoFrete}>
+                        {carregandoFrete ? "Calculando..." : "Calcular frete"}
+                      </button>
+                    </div>
+                    <label>
+                      Logradouro
+                      <input required value={enderecoEntrega.logradouro} onChange={(e) => atualizarEndereco("logradouro", e.target.value)} />
+                    </label>
+                    <div className="campos-linha">
+                      <label>
+                        Número
+                        <input required value={enderecoEntrega.numero} onChange={(e) => atualizarEndereco("numero", e.target.value)} />
+                      </label>
+                      <label>
+                        Complemento
+                        <input value={enderecoEntrega.complemento} onChange={(e) => atualizarEndereco("complemento", e.target.value)} />
+                      </label>
+                    </div>
+                    <label>
+                      Bairro
+                      <input required value={enderecoEntrega.bairro} onChange={(e) => atualizarEndereco("bairro", e.target.value)} />
+                    </label>
+                    <div className="campos-linha cidade-estado">
+                      <label>
+                        Cidade
+                        <input required value={enderecoEntrega.cidade} onChange={(e) => atualizarEndereco("cidade", e.target.value)} />
+                      </label>
+                      <label>
+                        UF
+                        <input required maxLength="2" value={enderecoEntrega.estado} onChange={(e) => atualizarEndereco("estado", e.target.value)} placeholder="SP" />
+                      </label>
+                    </div>
+
+                    <h3>Forma de pagamento</h3>
+                    <div className="pagamentos">
+                      {[['PIX', 'PIX'], ['CARTAO_CREDITO', 'Cartão de crédito'], ['CARTAO_DEBITO', 'Cartão de débito']].map(([valor, rotulo]) => (
+                        <label className="opcao-pagamento" key={valor}>
+                          <input type="radio" name="pagamento" value={valor} checked={formaPagamento === valor} onChange={(e) => setFormaPagamento(e.target.value)} />
+                          {rotulo}
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  <aside className="resumo-checkout">
+                    <h3>Resumo do pedido</h3>
+                    {carrinho.map((item) => (
+                      <div className="resumo-item" key={item.produto.id}>
+                        <span>{item.quantidade}× {item.produto.nome}</span>
+                        <strong>{formatarPreco((item.produto.emPromocao ? item.produto.precoPromocional : item.produto.precoVenda) * item.quantidade)}</strong>
+                      </div>
+                    ))}
+                    <div className="resumo-linha"><span>Produtos</span><strong>{formatarPreco(total)}</strong></div>
+                    <div className="resumo-linha"><span>Frete {cotacaoFrete ? `(${cotacaoFrete.modalidade})` : ""}</span><strong>{cotacaoFrete ? formatarPreco(cotacaoFrete.valor) : "—"}</strong></div>
+                    {cotacaoFrete && <small>Prazo estimado: {cotacaoFrete.prazoDias} dias úteis.</small>}
+                    <div className="resumo-total"><span>Total</span><strong>{formatarPreco(total + Number(cotacaoFrete?.valor || 0))}</strong></div>
+                    <button className="finalizar" type="submit" disabled={enviandoPedido}>
+                      {enviandoPedido ? "Criando pedido..." : "Confirmar pedido"}
+                    </button>
+                  </aside>
+                </div>
+                {erroCheckout && <p className="checkout-erro" role="alert">{erroCheckout}</p>}
+              </form>
+            )}
+          </section>
+        </div>
+      )}
     </div>
   );
 }

@@ -424,6 +424,212 @@ button {
   width: 100%;
   padding: 12px;
 }
+.finalizar:disabled,
+.botao-secundario:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.checkout-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(18, 24, 46, 0.58);
+  overflow-y: auto;
+}
+.checkout-modal {
+  position: relative;
+  width: min(900px, 100%);
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
+  border-radius: 20px;
+  background: #fff;
+  box-shadow: 0 28px 80px rgba(10, 15, 35, 0.32);
+  padding: 34px;
+}
+.checkout-fechar {
+  position: absolute;
+  right: 17px;
+  top: 14px;
+  width: 34px;
+  height: 34px;
+  border: 0;
+  border-radius: 50%;
+  color: #6d7688;
+  background: #f1f3f8;
+  font-size: 24px;
+  line-height: 1;
+}
+.checkout-cabecalho h2 {
+  margin: 7px 0;
+  letter-spacing: -0.6px;
+}
+.checkout-cabecalho > p:last-child {
+  margin: 0 0 25px;
+  color: #7b8496;
+  font-size: 13px;
+}
+.checkout-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 270px;
+  gap: 28px;
+}
+.checkout-campos h3,
+.resumo-checkout h3 {
+  margin: 0 0 14px;
+  font-size: 14px;
+}
+.checkout-campos h3:not(:first-child) {
+  margin-top: 24px;
+}
+.checkout-campos label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 12px;
+  color: #596275;
+  font-size: 11px;
+  font-weight: 700;
+}
+.checkout-campos input {
+  width: 100%;
+  border: 1px solid #dfe3ee;
+  border-radius: 9px;
+  padding: 10px 11px;
+  color: #20283b;
+  outline: 0;
+}
+.checkout-campos input:focus {
+  border-color: #8f89ec;
+  box-shadow: 0 0 0 3px #eeeefe;
+}
+.campos-linha {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.cep-linha {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+}
+.botao-secundario {
+  border: 1px solid #d9d6ff;
+  border-radius: 9px;
+  padding: 10px 12px;
+  color: #554cc9;
+  background: #f7f6ff;
+  font-size: 11px;
+  font-weight: 800;
+}
+.cidade-estado {
+  grid-template-columns: minmax(0, 1fr) 72px;
+}
+.pagamentos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.checkout-campos .opcao-pagamento {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  border: 1px solid #e2e5ee;
+  border-radius: 9px;
+  padding: 9px 10px;
+  color: #4b5568;
+  cursor: pointer;
+}
+.checkout-campos .opcao-pagamento input {
+  width: auto;
+  margin: 0;
+  box-shadow: none;
+}
+.resumo-checkout {
+  align-self: start;
+  border-radius: 14px;
+  padding: 18px;
+  background: #f7f7fc;
+}
+.resumo-item,
+.resumo-linha,
+.resumo-total {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+.resumo-item {
+  padding: 8px 0;
+  color: #6d7688;
+  font-size: 11px;
+}
+.resumo-item strong,
+.resumo-linha strong {
+  color: #30394d;
+  white-space: nowrap;
+}
+.resumo-linha {
+  padding: 10px 0 0;
+  color: #6d7688;
+  font-size: 12px;
+}
+.resumo-checkout small {
+  display: block;
+  margin: 7px 0 0;
+  color: #758051;
+  font-size: 10px;
+}
+.resumo-total {
+  margin: 16px 0;
+  padding-top: 15px;
+  border-top: 1px solid #dfe2eb;
+  color: #20283b;
+  font-size: 14px;
+}
+.resumo-total strong {
+  font-size: 17px;
+}
+.checkout-erro {
+  margin: 18px 0 0;
+  border-radius: 9px;
+  padding: 10px 12px;
+  color: #b91c1c;
+  background: #fff1f2;
+  font-size: 12px;
+}
+.pedido-sucesso {
+  max-width: 480px;
+  padding: 30px 14px 15px;
+  text-align: center;
+}
+.pedido-sucesso > span {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  margin: 0 auto 16px;
+  border-radius: 50%;
+  background: #dcfce7;
+  color: #15803d;
+  font-size: 26px;
+  font-weight: 800;
+}
+.pedido-sucesso h2 {
+  margin: 7px 0;
+}
+.pedido-sucesso strong {
+  color: #554cc9;
+  font-size: 19px;
+}
+.pedido-sucesso p:not(.eyebrow) {
+  color: #6d7688;
+  font-size: 13px;
+  line-height: 1.5;
+}
 
 .estado {
   background: #fff;
@@ -689,6 +895,22 @@ button {
   .botao-login {
     padding: 9px 11px;
     font-size: 11px;
+  }
+  .checkout-backdrop {
+    padding: 0;
+    align-items: end;
+  }
+  .checkout-modal {
+    max-height: 94vh;
+    border-radius: 20px 20px 0 0;
+    padding: 27px 18px;
+  }
+  .checkout-grid {
+    grid-template-columns: 1fr;
+    gap: 22px;
+  }
+  .resumo-checkout {
+    order: -1;
   }
 }
 .botao-login {

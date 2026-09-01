@@ -23,8 +23,10 @@ C:\Users\Gabriel Expedito\Documents\siscomercial-ecommerce\SISCOMERCIAL-ECOMMERC
 C:\Users\Gabriel Expedito\Documents\siscomercial-ecommerce\SISCOMERCIAL-ECOMMERCE\siscomercial\backend\src\main\java\com\siscomercial\ecommerce\model\Endereco.java
 C:\Users\Gabriel Expedito\Documents\siscomercial-ecommerce\SISCOMERCIAL-ECOMMERCE\siscomercial\backend\src\main\java\com\siscomercial\ecommerce\model\FormaPagamento.java
 C:\Users\Gabriel Expedito\Documents\siscomercial-ecommerce\SISCOMERCIAL-ECOMMERCE\siscomercial\backend\src\main\java\com\siscomercial\ecommerce\model\HistoricoPreco.java
+C:\Users\Gabriel Expedito\Documents\siscomercial-ecommerce\SISCOMERCIAL-ECOMMERCE\siscomercial\backend\src\main\java\com\siscomercial\ecommerce\model\HistoricoStatusPedido.java
 C:\Users\Gabriel Expedito\Documents\siscomercial-ecommerce\SISCOMERCIAL-ECOMMERCE\siscomercial\backend\src\main\java\com\siscomercial\ecommerce\model\ItemPedido.java
 C:\Users\Gabriel Expedito\Documents\siscomercial-ecommerce\SISCOMERCIAL-ECOMMERCE\siscomercial\backend\src\main\java\com\siscomercial\ecommerce\model\MovimentacaoEstoque.java
+C:\Users\Gabriel Expedito\Documents\siscomercial-ecommerce\SISCOMERCIAL-ECOMMERCE\siscomercial\backend\src\main\java\com\siscomercial\ecommerce\model\OrigemAlteracaoStatusPedido.java
 C:\Users\Gabriel Expedito\Documents\siscomercial-ecommerce\SISCOMERCIAL-ECOMMERCE\siscomercial\backend\src\main\java\com\siscomercial\ecommerce\model\Pagamento.java
 C:\Users\Gabriel Expedito\Documents\siscomercial-ecommerce\SISCOMERCIAL-ECOMMERCE\siscomercial\backend\src\main\java\com\siscomercial\ecommerce\model\Pedido.java
 C:\Users\Gabriel Expedito\Documents\siscomercial-ecommerce\SISCOMERCIAL-ECOMMERCE\siscomercial\backend\src\main\java\com\siscomercial\ecommerce\model\PerfilUsuario.java
@@ -35,6 +37,7 @@ C:\Users\Gabriel Expedito\Documents\siscomercial-ecommerce\SISCOMERCIAL-ECOMMERC
 C:\Users\Gabriel Expedito\Documents\siscomercial-ecommerce\SISCOMERCIAL-ECOMMERCE\siscomercial\backend\src\main\java\com\siscomercial\ecommerce\model\TipoMovimentacaoEstoque.java
 C:\Users\Gabriel Expedito\Documents\siscomercial-ecommerce\SISCOMERCIAL-ECOMMERCE\siscomercial\backend\src\main\java\com\siscomercial\ecommerce\repository\ClienteRepository.java
 C:\Users\Gabriel Expedito\Documents\siscomercial-ecommerce\SISCOMERCIAL-ECOMMERCE\siscomercial\backend\src\main\java\com\siscomercial\ecommerce\repository\HistoricoPrecoRepository.java
+C:\Users\Gabriel Expedito\Documents\siscomercial-ecommerce\SISCOMERCIAL-ECOMMERCE\siscomercial\backend\src\main\java\com\siscomercial\ecommerce\repository\HistoricoStatusPedidoRepository.java
 C:\Users\Gabriel Expedito\Documents\siscomercial-ecommerce\SISCOMERCIAL-ECOMMERCE\siscomercial\backend\src\main\java\com\siscomercial\ecommerce\repository\MovimentacaoEstoqueRepository.java
 C:\Users\Gabriel Expedito\Documents\siscomercial-ecommerce\SISCOMERCIAL-ECOMMERCE\siscomercial\backend\src\main\java\com\siscomercial\ecommerce\repository\PedidoRepository.java
 C:\Users\Gabriel Expedito\Documents\siscomercial-ecommerce\SISCOMERCIAL-ECOMMERCE\siscomercial\backend\src\main\java\com\siscomercial\ecommerce\repository\ProdutoRepository.java
