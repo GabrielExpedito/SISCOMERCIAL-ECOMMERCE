@@ -1,7 +1,9 @@
 package com.siscomercial.ecommerce.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Data;
+import lombok.ToString;
 import java.math.BigDecimal;
 
 /** RF003 - 7.10 Itens do pedido (snapshot de descricao e preco no momento da compra). */
@@ -16,6 +18,8 @@ public class ItemPedido {
 
     @ManyToOne
     @JoinColumn(name = "pedido_id", nullable = false)
+    @JsonIgnore
+    @ToString.Exclude
     private Pedido pedido;
 
     @ManyToOne

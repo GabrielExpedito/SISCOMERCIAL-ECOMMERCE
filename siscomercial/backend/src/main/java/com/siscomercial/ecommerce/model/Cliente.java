@@ -1,5 +1,6 @@
 package com.siscomercial.ecommerce.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Data;
 import java.time.LocalDateTime;
@@ -28,6 +29,7 @@ public class Cliente {
     private String telefone;
 
     @Column(name = "senha_hash")
+    @JsonIgnore
     private String senhaHash;
 
     @Column(name = "google_id", unique = true)

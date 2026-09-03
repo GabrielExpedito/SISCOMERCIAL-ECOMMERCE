@@ -1,7 +1,9 @@
 package com.siscomercial.ecommerce.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Data;
+import lombok.ToString;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
@@ -17,6 +19,8 @@ public class Pagamento {
 
     @OneToOne
     @JoinColumn(name = "pedido_id", nullable = false, unique = true)
+    @JsonIgnore
+    @ToString.Exclude
     private Pedido pedido;
 
     @Enumerated(EnumType.STRING)
