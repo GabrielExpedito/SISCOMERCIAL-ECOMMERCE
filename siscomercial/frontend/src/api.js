@@ -53,4 +53,22 @@ export const api = {
     }),
 
   buscarUsuarioAtual: () => request("/auth/me"),
+
+  listarPedidosRetaguarda: (filtros = {}) => {
+    const parametros = new URLSearchParams();
+    Object.entries(filtros).forEach(([chave, valor]) => {
+      if (valor !== undefined && valor !== null && valor !== "") {
+        const dataInicio = chave === "dataInicio" && /^\d{4}-\d{2}-\d{2}$/.test(valor);
+        const dataFim = chave === "dataFim" && /^\d{4}-\d{2}-\d{2}$/.test(valor);
+        parametros.set(chave, dataInicio ? `${valor}T00:00:00` : dataFim ? `${valor}T23:59:59` : valor);
+      }
+    });
+    const query = parametros.toString();
+    return request(`/retaguarda/pedidos${query ? `?${query}` : ""}`);
+  },
+
+  buscarPedidoRetaguarda: (id) => request(`/retaguarda/pedidos/${id}`),
+
+  listarHistoricoPedidoRetaguarda: (id) =>
+    request(`/retaguarda/pedidos/${id}/historico`),
 };

@@ -8,7 +8,12 @@ import com.siscomercial.ecommerce.repository.HistoricoStatusPedidoRepository;
 import com.siscomercial.ecommerce.repository.ProdutoRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
+import jakarta.persistence.criteria.Predicate;
+import java.util.ArrayList;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
@@ -233,5 +238,46 @@ public class PedidoService {
 
     public List<Pedido> listarPedidosDoCliente(Long clienteId) {
         return pedidoRepository.findByClienteIdOrderByDataHoraDesc(clienteId);
+    }
+
+    public Page<Pedido> listarPedidosRetaguarda(
+            StatusPedido status,
+            String numeroPedido,
+            String clienteTermo,
+            LocalDateTime dataInicio,
+            LocalDateTime dataFim,
+            Pageable pageable) {
+
+        Specification<Pedido> spec = (root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+
+            if (status != null) {
+                predicates.add(cb.equal(root.get("status"), status));
+            }
+
+            if (numeroPedido != null && !numeroPedido.isBlank()) {
+                predicates.add(cb.like(cb.lower(root.get("numeroPedido")), "%" + numeroPedido.trim().toLowerCase() + "%"));
+            }
+
+            if (clienteTermo != null && !clienteTermo.isBlank()) {
+                String termo = "%" + clienteTermo.trim().toLowerCase() + "%";
+                var clienteJoin = root.join("cliente", jakarta.persistence.criteria.JoinType.LEFT);
+                Predicate nomeMatch = cb.like(cb.lower(clienteJoin.get("nomeRazaoSocial")), termo);
+                Predicate emailMatch = cb.like(cb.lower(clienteJoin.get("email")), termo);
+                predicates.add(cb.or(nomeMatch, emailMatch));
+            }
+
+            if (dataInicio != null) {
+                predicates.add(cb.greaterThanOrEqualTo(root.get("dataHora"), dataInicio));
+            }
+
+            if (dataFim != null) {
+                predicates.add(cb.lessThanOrEqualTo(root.get("dataHora"), dataFim));
+            }
+
+            return cb.and(predicates.toArray(new Predicate[0]));
+        };
+
+        return pedidoRepository.findAll(spec, pageable);
     }
 }

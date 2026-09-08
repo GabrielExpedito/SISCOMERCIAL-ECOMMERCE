@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { api } from "./api";
 import AgenteChat from "./AgenteChat.jsx";
+import RetaguardaPedidos from "./RetaguardaPedidos.jsx";
 import { useAuth } from "./context/AuthContext.jsx";
 
 function formatarPreco(valor) {
@@ -45,6 +46,7 @@ export default function App() {
   const [enviandoPedido, setEnviandoPedido] = useState(false);
   const [erroCheckout, setErroCheckout] = useState(null);
   const [pedidoCriado, setPedidoCriado] = useState(null);
+  const [modoRetaguarda, setModoRetaguarda] = useState(false);
 
   const carregarCatalogo = useCallback(async () => {
     try {
@@ -183,6 +185,15 @@ export default function App() {
 
           {ehAdmin && (
             <button
+              className={`botao-assistente ${modoRetaguarda ? "ativo" : ""}`}
+              onClick={() => setModoRetaguarda((valor) => !valor)}
+            >
+              {modoRetaguarda ? "Ver loja" : "Retaguarda"}
+            </button>
+          )}
+
+          {ehAdmin && (
+            <button
               className={`botao-assistente ${mostrarAgente ? "ativo" : ""}`}
               onClick={() => setMostrarAgente((v) => !v)}
             >
@@ -224,6 +235,9 @@ export default function App() {
         </div>
       </header>
 
+      {modoRetaguarda && ehAdmin ? (
+        <RetaguardaPedidos />
+      ) : (
       <main className="conteudo">
         <section className="hero">
           <div>
@@ -375,6 +389,7 @@ export default function App() {
           </aside>
         </div>
       </main>
+      )}
 
       {mostrarAgente && <AgenteChat onCatalogoAtualizado={carregarCatalogo} />}
 
