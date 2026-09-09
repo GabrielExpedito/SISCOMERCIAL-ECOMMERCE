@@ -182,6 +182,12 @@ public class PedidoService {
 
     @Transactional
     public void registrarFaturamento(Long pedidoId, String numeroNota, String chaveNota) {
+        registrarFaturamento(pedidoId, numeroNota, chaveNota, OrigemAlteracaoStatusPedido.ADMINISTRADOR, null);
+    }
+
+    @Transactional
+    public void registrarFaturamento(Long pedidoId, String numeroNota, String chaveNota,
+                                    OrigemAlteracaoStatusPedido origem, String responsavel) {
         Pedido pedido = buscarPorId(pedidoId);
         if (pedido.getStatus() != StatusPedido.EM_SEPARACAO) {
             throw new RegraNegocioException("Pedido " + pedido.getNumeroPedido()
@@ -189,8 +195,25 @@ public class PedidoService {
         }
         pedido.setNumeroNotaFiscal(numeroNota);
         pedido.setChaveNotaFiscal(chaveNota);
-        alterarStatus(pedido, StatusPedido.FATURADO, OrigemAlteracaoStatusPedido.ADMINISTRADOR, null);
+        alterarStatus(pedido, StatusPedido.FATURADO, origem, responsavel);
         pedidoRepository.save(pedido);
+    }
+
+    /** Registra o despacho somente depois de o pedido estar faturado. */
+    @Transactional
+    public Pedido registrarEnvio(Long pedidoId, String codigoRastreamento,
+                                 OrigemAlteracaoStatusPedido origem, String responsavel) {
+        if (codigoRastreamento == null || codigoRastreamento.isBlank()) {
+            throw new RegraNegocioException("O codigo de rastreamento e obrigatorio para registrar o envio.");
+        }
+        Pedido pedido = buscarPorId(pedidoId);
+        if (pedido.getStatus() != StatusPedido.FATURADO) {
+            throw new RegraNegocioException("Pedido " + pedido.getNumeroPedido()
+                    + " nao esta apto para envio (status atual: " + pedido.getStatus() + ").");
+        }
+        pedido.setCodigoRastreamento(codigoRastreamento.trim());
+        alterarStatus(pedido, StatusPedido.ENVIADO, origem, responsavel);
+        return pedidoRepository.save(pedido);
     }
 
     /**

@@ -101,4 +101,13 @@ public class RetaguardaDTOs {
     public record CancelarPedidoAdminRequest(
             String motivo
     ) {}
+
+    public record FaturarPedidoAdminRequest(
+            String numeroNota,
+            String chaveNota
+    ) {}
+
+    public record EnviarPedidoAdminRequest(
+            String codigoRastreamento
+    ) {}
 }

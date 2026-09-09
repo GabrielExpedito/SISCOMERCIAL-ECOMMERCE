@@ -63,6 +63,32 @@ class PedidoServiceStatusTest {
         verify(pedidoRepository, never()).save(any());
     }
 
+    @Test
+    void deveRegistrarEnvioSomenteParaPedidoFaturado() {
+        Pedido pedido = pedidoNoStatus(StatusPedido.FATURADO);
+        when(pedidoRepository.findById(1L)).thenReturn(Optional.of(pedido));
+        when(pedidoRepository.save(any(Pedido.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        Pedido resultado = pedidoService.registrarEnvio(1L, "BR123", OrigemAlteracaoStatusPedido.ADMINISTRADOR,
+                "expedicao@siscomercial.com");
+
+        assertEquals(StatusPedido.ENVIADO, resultado.getStatus());
+        assertEquals("BR123", resultado.getCodigoRastreamento());
+        verify(historicoStatusPedidoRepository).save(any(HistoricoStatusPedido.class));
+    }
+
+    @Test
+    void deveRejeitarEnvioAntesDoFaturamento() {
+        Pedido pedido = pedidoNoStatus(StatusPedido.EM_SEPARACAO);
+        when(pedidoRepository.findById(1L)).thenReturn(Optional.of(pedido));
+
+        assertThrows(RegraNegocioException.class, () -> pedidoService.registrarEnvio(1L, "BR123",
+                OrigemAlteracaoStatusPedido.ADMINISTRADOR, "expedicao@siscomercial.com"));
+
+        verify(pedidoRepository, never()).save(any());
+        verifyNoInteractions(historicoStatusPedidoRepository);
+    }
+
     private Pedido pedidoNoStatus(StatusPedido status) {
         Pedido pedido = new Pedido();
         pedido.setId(1L);

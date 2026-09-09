@@ -7,6 +7,7 @@ import com.siscomercial.ecommerce.model.Pedido;
 import com.siscomercial.ecommerce.model.StatusPedido;
 import com.siscomercial.ecommerce.model.DTO.RetaguardaDTOs.*;
 import com.siscomercial.ecommerce.service.PedidoService;
+import com.siscomercial.ecommerce.service.NotaFiscalService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -31,6 +32,7 @@ import java.util.List;
 public class RetaguardaPedidoController {
 
     private final PedidoService pedidoService;
+    private final NotaFiscalService notaFiscalService;
 
     /**
      * Listagem paginada de pedidos com filtros de status, numero, cliente e periodo.
@@ -126,6 +128,44 @@ public class RetaguardaPedidoController {
                 responsavel
         );
 
+        return mapearParaDetalhe(pedido);
+    }
+
+    /** Emite/registro fiscal usando o servico de dominio, sem expor o provedor fiscal. */
+    @PostMapping("/{id}/faturar")
+    public RetaguardaPedidoDetalheDTO faturarPedido(
+            @PathVariable Long id,
+            @RequestBody(required = false) FaturarPedidoAdminRequest request,
+            Authentication authentication
+    ) {
+        Pedido pedido = pedidoService.buscarPorId(id);
+        notaFiscalService.validarPedidoAptoFaturamento(pedido);
+        if (pedido.getStatus() != StatusPedido.EM_SEPARACAO) {
+            throw new RegraNegocioException("Pedido " + pedido.getNumeroPedido()
+                    + " deve estar em separacao antes do faturamento.");
+        }
+        String numeroNota = request != null ? request.numeroNota() : null;
+        String chaveNota = request != null ? request.chaveNota() : null;
+        if (numeroNota == null || numeroNota.isBlank() || chaveNota == null || chaveNota.isBlank()) {
+            NotaFiscalService.ResultadoEmissao resultado = notaFiscalService.emitir(pedido);
+            numeroNota = resultado.numeroNota();
+            chaveNota = resultado.chaveAcesso();
+        }
+        pedidoService.registrarFaturamento(id, numeroNota.trim(), chaveNota.trim(),
+                OrigemAlteracaoStatusPedido.ADMINISTRADOR, extrairResponsavel(authentication));
+        return mapearParaDetalhe(pedidoService.buscarPorId(id));
+    }
+
+    /** Registra rastreamento e avanca o pedido faturado para enviado. */
+    @PostMapping("/{id}/enviar")
+    public RetaguardaPedidoDetalheDTO enviarPedido(
+            @PathVariable Long id,
+            @RequestBody EnviarPedidoAdminRequest request,
+            Authentication authentication
+    ) {
+        String responsavel = extrairResponsavel(authentication);
+        Pedido pedido = pedidoService.registrarEnvio(id, request != null ? request.codigoRastreamento() : null,
+                OrigemAlteracaoStatusPedido.ADMINISTRADOR, responsavel);
         return mapearParaDetalhe(pedido);
     }
 

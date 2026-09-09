@@ -8,6 +8,7 @@ import com.siscomercial.ecommerce.model.*;
 import com.siscomercial.ecommerce.model.DTO.RetaguardaDTOs.AlterarStatusAdminRequest;
 import com.siscomercial.ecommerce.model.DTO.RetaguardaDTOs.CancelarPedidoAdminRequest;
 import com.siscomercial.ecommerce.service.PedidoService;
+import com.siscomercial.ecommerce.service.NotaFiscalService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,6 +45,9 @@ class RetaguardaPedidoControllerTest {
 
     @MockBean
     private PedidoService pedidoService;
+
+    @MockBean
+    private NotaFiscalService notaFiscalService;
 
     @MockBean
     private CustomOAuth2UserService customOAuth2UserService;
@@ -166,5 +170,36 @@ class RetaguardaPedidoControllerTest {
                 .andExpect(jsonPath("$.status").value("CANCELADO"));
 
         verify(pedidoService).cancelar(eq(1L), eq("Cliente desistiu da compra"), eq(OrigemAlteracaoStatusPedido.ADMINISTRADOR), any());
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void deveFaturarPedidoEmSeparacaoComDadosInformados() throws Exception {
+        pedidoExemplo.setStatus(StatusPedido.EM_SEPARACAO);
+        when(pedidoService.buscarPorId(1L)).thenReturn(pedidoExemplo);
+
+        mockMvc.perform(post("/api/retaguarda/pedidos/1/faturar")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"numeroNota\":\"123\",\"chaveNota\":\"chave-123\"}"))
+                .andExpect(status().isOk());
+
+        verify(pedidoService).registrarFaturamento(eq(1L), eq("123"), eq("chave-123"),
+                eq(OrigemAlteracaoStatusPedido.ADMINISTRADOR), any());
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN", username = "expedicao@siscomercial.com")
+    void deveRegistrarEnvioComRastreamento() throws Exception {
+        pedidoExemplo.setStatus(StatusPedido.ENVIADO);
+        when(pedidoService.registrarEnvio(eq(1L), eq("BR123"), eq(OrigemAlteracaoStatusPedido.ADMINISTRADOR), any()))
+                .thenReturn(pedidoExemplo);
+
+        mockMvc.perform(post("/api/retaguarda/pedidos/1/enviar")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"codigoRastreamento\":\"BR123\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("ENVIADO"));
+
+        verify(pedidoService).registrarEnvio(eq(1L), eq("BR123"), eq(OrigemAlteracaoStatusPedido.ADMINISTRADOR), any());
     }
 }

@@ -71,4 +71,18 @@ export const api = {
 
   listarHistoricoPedidoRetaguarda: (id) =>
     request(`/retaguarda/pedidos/${id}/historico`),
+
+  alterarStatusPedidoRetaguarda: (id, status) => request(`/retaguarda/pedidos/${id}/status`, {
+    method: "POST", body: JSON.stringify({ status }),
+  }),
+
+  faturarPedidoRetaguarda: (id) => request(`/retaguarda/pedidos/${id}/faturar`, { method: "POST" }),
+
+  enviarPedidoRetaguarda: (id, codigoRastreamento) => request(`/retaguarda/pedidos/${id}/enviar`, {
+    method: "POST", body: JSON.stringify({ codigoRastreamento }),
+  }),
+
+  cancelarPedidoRetaguarda: (id, motivo) => request(`/retaguarda/pedidos/${id}/cancelar`, {
+    method: "POST", body: JSON.stringify({ motivo }),
+  }),
 };
