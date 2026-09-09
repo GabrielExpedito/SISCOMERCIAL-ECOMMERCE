@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { api } from "./api";
 import AgenteChat from "./AgenteChat.jsx";
 import RetaguardaPedidos from "./RetaguardaPedidos.jsx";
+import RetaguardaMarketplaces from "./RetaguardaMarketplaces.jsx";
 import { useAuth } from "./context/AuthContext.jsx";
 
 function formatarPreco(valor) {
@@ -47,6 +48,7 @@ export default function App() {
   const [erroCheckout, setErroCheckout] = useState(null);
   const [pedidoCriado, setPedidoCriado] = useState(null);
   const [modoRetaguarda, setModoRetaguarda] = useState(false);
+  const [telaRetaguarda, setTelaRetaguarda] = useState("pedidos");
 
   const carregarCatalogo = useCallback(async () => {
     try {
@@ -186,7 +188,10 @@ export default function App() {
           {ehAdmin && (
             <button
               className={`botao-assistente ${modoRetaguarda ? "ativo" : ""}`}
-              onClick={() => setModoRetaguarda((valor) => !valor)}
+              onClick={() => {
+                setModoRetaguarda((valor) => !valor);
+                setTelaRetaguarda("pedidos");
+              }}
             >
               {modoRetaguarda ? "Ver loja" : "Retaguarda"}
             </button>
@@ -236,7 +241,27 @@ export default function App() {
       </header>
 
       {modoRetaguarda && ehAdmin ? (
-        <RetaguardaPedidos />
+        <>
+          <div className="retaguarda-navegacao">
+            <button
+              className={telaRetaguarda === "pedidos" ? "ativo" : ""}
+              onClick={() => setTelaRetaguarda("pedidos")}
+            >
+              Pedidos
+            </button>
+            <button
+              className={telaRetaguarda === "marketplaces" ? "ativo" : ""}
+              onClick={() => setTelaRetaguarda("marketplaces")}
+            >
+              Marketplaces
+            </button>
+          </div>
+          {telaRetaguarda === "marketplaces" ? (
+            <RetaguardaMarketplaces />
+          ) : (
+            <RetaguardaPedidos />
+          )}
+        </>
       ) : (
       <main className="conteudo">
         <section className="hero">

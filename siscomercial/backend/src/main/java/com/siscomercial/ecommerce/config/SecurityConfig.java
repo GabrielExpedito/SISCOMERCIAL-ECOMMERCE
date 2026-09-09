@@ -35,6 +35,9 @@ public class SecurityConfig {
                         .requestMatchers("/oauth2/**").permitAll()
                         .requestMatchers("/login/**").permitAll()
 
+                        .requestMatchers("/api/retaguarda/marketplaces/mercado-livre/callback")
+                        .permitAll()
+
                         .requestMatchers("/api/retaguarda/**")
                         .hasRole("ADMIN")
 

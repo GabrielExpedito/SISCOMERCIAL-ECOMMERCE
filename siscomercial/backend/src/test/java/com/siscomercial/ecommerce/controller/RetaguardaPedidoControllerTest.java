@@ -83,6 +83,7 @@ class RetaguardaPedidoControllerTest {
     @Test
     void deveBloquearAcessoNaoAutenticado() throws Exception {
         mockMvc.perform(get("/api/retaguarda/pedidos"))
+                .andExpect(status().isUnauthorized());
                 .andExpect(status().isFound()); // OAuth2 redireciona para /oauth2/authorization/google
     }
 
@@ -150,6 +151,7 @@ class RetaguardaPedidoControllerTest {
         mockMvc.perform(post("/api/retaguarda/pedidos/1/status")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
                 .andExpect(status().isUnprocessableEntity())
                 .andExpect(jsonPath("$.erro").value("Transicao invalida para o pedido SIS-2026-000001: PAGAMENTO_APROVADO -> ENTREGUE."));
     }

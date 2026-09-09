@@ -54,6 +54,38 @@ export const api = {
 
   buscarUsuarioAtual: () => request("/auth/me"),
 
+  listarMarketplaces: () => request("/retaguarda/marketplaces"),
+
+  criarIntegracaoMercadoLivre: (payload) =>
+    request("/retaguarda/marketplaces/mercado-livre", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+
+  iniciarAutorizacaoMercadoLivre: (id) =>
+    request(`/retaguarda/marketplaces/${id}/mercado-livre/autorizacao`, {
+      method: "POST",
+    }),
+
+  alterarAtivacaoMarketplace: (id, ativa) =>
+    request(`/retaguarda/marketplaces/${id}/ativacao`, {
+      method: "POST",
+      body: JSON.stringify({ ativa }),
+    }),
+
+  diagnosticarMarketplace: (id) =>
+    request(`/retaguarda/marketplaces/${id}/diagnostico`, {
+      method: "POST",
+    }),
+
+  listarProdutosRetaguarda: () => request("/retaguarda/produtos"),
+
+  publicarProdutoMarketplace: (integracaoId, produtoId) =>
+    request("/retaguarda/marketplaces/publicacoes", {
+      method: "POST",
+      body: JSON.stringify({ integracaoId, produtoId }),
+    }),
+
   listarPedidosRetaguarda: (filtros = {}) => {
     const parametros = new URLSearchParams();
     Object.entries(filtros).forEach(([chave, valor]) => {
