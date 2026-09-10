@@ -1,13 +1,17 @@
 const BASE_URL = "/api";
 
 async function request(path, options = {}) {
+  const headers = new Headers(options.headers || {});
+  const isFormData = options.body instanceof FormData;
+
+  if (!isFormData && !headers.has("Content-Type")) {
+    headers.set("Content-Type", "application/json");
+  }
+
   const res = await fetch(`${BASE_URL}${path}`, {
     credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
-      ...(options.headers || {}),
-    },
     ...options,
+    headers,
   });
 
   if (!res.ok) {
@@ -79,6 +83,49 @@ export const api = {
     }),
 
   listarProdutosRetaguarda: () => request("/retaguarda/produtos"),
+
+  buscarProdutoRetaguarda: (id) =>
+    request(`/retaguarda/produtos/${id}`),
+
+  criarProdutoRetaguarda: (payload) =>
+    request("/retaguarda/produtos", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+
+  atualizarProdutoRetaguarda: (id, payload, usuario = "admin") =>
+    request(`/retaguarda/produtos/${id}?usuario=${encodeURIComponent(usuario)}`, {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    }),
+
+  inativarProdutoRetaguarda: (id) =>
+    request(`/retaguarda/produtos/${id}/inativar`, { method: "POST" }),
+
+  reativarProdutoRetaguarda: (id) =>
+    request(`/retaguarda/produtos/${id}/reativar`, { method: "POST" }),
+
+  enviarImagemProduto: (produtoId, arquivo) => {
+    const formData = new FormData();
+    formData.append("file", arquivo);
+
+    return request(`/retaguarda/produtos/${produtoId}/imagens`, {
+      method: "POST",
+      body: formData,
+    });
+  },
+
+  definirImagemPrincipal: (produtoId, url) =>
+    request(`/retaguarda/produtos/${produtoId}/imagens/principal`, {
+      method: "PUT",
+      body: JSON.stringify({ url }),
+    }),
+
+  removerImagemProduto: (produtoId, url) =>
+    request(
+      `/retaguarda/produtos/${produtoId}/imagens?url=${encodeURIComponent(url)}`,
+      { method: "DELETE" },
+    ),
 
   publicarProdutoMarketplace: (integracaoId, produtoId) =>
     request("/retaguarda/marketplaces/publicacoes", {

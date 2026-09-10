@@ -103,6 +103,12 @@ public class ProdutoService {
                 .orElseThrow(() -> new RecursoNaoEncontradoException("Produto nao encontrado: id " + id));
     }
 
+    @Transactional
+    public Produto salvarAlteracoesDeImagem(Produto produto) {
+        produto.setAtualizadoEm(LocalDateTime.now());
+        return produtoRepository.save(produto);
+    }
+
     public Produto buscarPorCodigo(String codigo) {
         return produtoRepository.findByCodigoInterno(codigo)
                 .orElseThrow(() -> new RecursoNaoEncontradoException("Produto nao encontrado: codigo " + codigo));

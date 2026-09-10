@@ -3,6 +3,8 @@ import { api } from "./api";
 import AgenteChat from "./AgenteChat.jsx";
 import RetaguardaPedidos from "./RetaguardaPedidos.jsx";
 import RetaguardaMarketplaces from "./RetaguardaMarketplaces.jsx";
+import RetaguardaProdutos from "./RetaguardaProdutos.jsx";
+import RetaguardaHome from "./RetaguardaHome.jsx";
 import { useAuth } from "./context/AuthContext.jsx";
 
 function formatarPreco(valor) {
@@ -48,7 +50,7 @@ export default function App() {
   const [erroCheckout, setErroCheckout] = useState(null);
   const [pedidoCriado, setPedidoCriado] = useState(null);
   const [modoRetaguarda, setModoRetaguarda] = useState(false);
-  const [telaRetaguarda, setTelaRetaguarda] = useState("pedidos");
+  const [telaRetaguarda, setTelaRetaguarda] = useState(null);
 
   const carregarCatalogo = useCallback(async () => {
     try {
@@ -189,8 +191,13 @@ export default function App() {
             <button
               className={`botao-assistente ${modoRetaguarda ? "ativo" : ""}`}
               onClick={() => {
-                setModoRetaguarda((valor) => !valor);
-                setTelaRetaguarda("pedidos");
+                setModoRetaguarda((valor) => {
+                  const novoValor = !valor;
+                  if (novoValor) {
+                    setTelaRetaguarda(null);
+                  }
+                  return novoValor;
+                });
               }}
             >
               {modoRetaguarda ? "Ver loja" : "Retaguarda"}
@@ -241,27 +248,49 @@ export default function App() {
       </header>
 
       {modoRetaguarda && ehAdmin ? (
-        <>
-          <div className="retaguarda-navegacao">
-            <button
-              className={telaRetaguarda === "pedidos" ? "ativo" : ""}
-              onClick={() => setTelaRetaguarda("pedidos")}
-            >
-              Pedidos
-            </button>
-            <button
-              className={telaRetaguarda === "marketplaces" ? "ativo" : ""}
-              onClick={() => setTelaRetaguarda("marketplaces")}
-            >
-              Marketplaces
-            </button>
-          </div>
-          {telaRetaguarda === "marketplaces" ? (
-            <RetaguardaMarketplaces />
-          ) : (
-            <RetaguardaPedidos />
-          )}
-        </>
+        telaRetaguarda === null ? (
+          <RetaguardaHome
+            onSelecionarModulo={setTelaRetaguarda}
+          />
+        ) : (
+          <>
+            <div className="retaguarda-navegacao">
+              <button
+                className="retaguarda-voltar-menu"
+                onClick={() => setTelaRetaguarda(null)}
+              >
+                ← Retaguarda
+              </button>
+              <div className="retaguarda-navegacao-modulos">
+                <button
+                  className={telaRetaguarda === "pedidos" ? "ativo" : ""}
+                  onClick={() => setTelaRetaguarda("pedidos")}
+                >
+                  Pedidos
+                </button>
+                <button
+                  className={telaRetaguarda === "produtos" ? "ativo" : ""}
+                  onClick={() => setTelaRetaguarda("produtos")}
+                >
+                  Produtos
+                </button>
+                <button
+                  className={telaRetaguarda === "marketplaces" ? "ativo" : ""}
+                  onClick={() => setTelaRetaguarda("marketplaces")}
+                >
+                  Marketplaces
+                </button>
+              </div>
+            </div>
+            {telaRetaguarda === "produtos" ? (
+              <RetaguardaProdutos />
+            ) : telaRetaguarda === "marketplaces" ? (
+              <RetaguardaMarketplaces />
+            ) : (
+              <RetaguardaPedidos />
+            )}
+          </>
+        )
       ) : (
       <main className="conteudo">
         <section className="hero">
