@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api } from "./api";
-import ProdutoImagens from "./ProdutoImagens";
 
 const statusLabel = (status) =>
   (status || "")
@@ -401,13 +400,6 @@ export default function RetaguardaMarketplaces() {
             </p>
           </div>
           <div className="publicacao-grid">
-            <div>
-              <label className="campo-marketplace-label">Integração</label>
-              <div className="campo-marketplace-info">
-                <strong>{integracaoSelecionada.lojaProprietaria}</strong>
-                <span>Mercado Livre · #{integracaoSelecionada.id}</span>
-              </div>
-            </div>
             <label className="campo-marketplace-label">
               Produto
               <select
@@ -466,59 +458,49 @@ export default function RetaguardaMarketplaces() {
                   <div
                     className={`marketplace-preflight ${problemas.length ? "invalida" : "valida"}`}
                   >
-                  <div className="marketplace-preflight-cabecalho">
-                    <strong>Pré-validação da publicação</strong>
-                    <span>
-                      {problemas.length
-                        ? "Ajustes necessários"
-                        : "Dados mínimos preenchidos"}
-                    </span>
+                    <div className="marketplace-preflight-cabecalho">
+                      <strong>Pré-validação da publicação</strong>
+                      <span>
+                        {problemas.length
+                          ? "Ajustes necessários"
+                          : "Dados mínimos preenchidos"}
+                      </span>
+                    </div>
+                    <div className="marketplace-preflight-dados">
+                      <span>
+                        <b>Categoria:</b> {produto.categoria || "—"}
+                      </span>
+                      <span>
+                        <b>Preço:</b>{" "}
+                        {Number(preco || 0).toLocaleString("pt-BR", {
+                          style: "currency",
+                          currency: "BRL",
+                        })}
+                      </span>
+                      <span>
+                        <b>Estoque disponível:</b>{" "}
+                        {Math.max(
+                          0,
+                          Number(produto.quantidadeEstoque || 0) -
+                            Number(produto.quantidadeReservada || 0),
+                        )}
+                      </span>
+                      <span>
+                        <b>Imagens:</b> {imagens.length}
+                      </span>
+                      <span>
+                        <b>Descrição:</b>{" "}
+                        {produto.descricao ? "cadastrada" : "não cadastrada"}
+                      </span>
+                    </div>
+                    {problemas.length > 0 && (
+                      <ul>
+                        {problemas.map((problema) => (
+                          <li key={problema}>{problema}</li>
+                        ))}
+                      </ul>
+                    )}
                   </div>
-                  <div className="marketplace-preflight-dados">
-                    <span>
-                      <b>Categoria:</b> {produto.categoria || "—"}
-                    </span>
-                    <span>
-                      <b>Preço:</b>{" "}
-                      {Number(preco || 0).toLocaleString("pt-BR", {
-                        style: "currency",
-                        currency: "BRL",
-                      })}
-                    </span>
-                    <span>
-                      <b>Estoque disponível:</b>{" "}
-                      {Math.max(
-                        0,
-                        Number(produto.quantidadeEstoque || 0) -
-                          Number(produto.quantidadeReservada || 0),
-                      )}
-                    </span>
-                    <span>
-                      <b>Imagens:</b> {imagens.length}
-                    </span>
-                    <span>
-                      <b>Descrição:</b>{" "}
-                      {produto.descricao ? "cadastrada" : "não cadastrada"}
-                    </span>
-                  </div>
-                  {problemas.length > 0 && (
-                    <ul>
-                      {problemas.map((problema) => (
-                        <li key={problema}>{problema}</li>
-                      ))}
-                    </ul>
-                  )}
-                  </div>
-                  <ProdutoImagens
-                    produto={produto}
-                    onAtualizado={(atualizado) => {
-                      setProdutos((atual) =>
-                        atual.map((item) =>
-                          item.id === atualizado.id ? atualizado : item,
-                        ),
-                      );
-                    }}
-                  />
                 </>
               );
             })()}
