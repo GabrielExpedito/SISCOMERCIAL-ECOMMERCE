@@ -65,6 +65,11 @@ public class ProdutoService {
         existente.setPrecoVenda(dadosNovos.getPrecoVenda());
         existente.setPrecoPromocional(dadosNovos.getPrecoPromocional());
         existente.setCategoria(dadosNovos.getCategoria());
+        existente.setCategoriaMercadoLivreId(dadosNovos.getCategoriaMercadoLivreId());
+        existente.setCategoriaMercadoLivreNome(dadosNovos.getCategoriaMercadoLivreNome());
+        existente.setAtributosMercadoLivre(dadosNovos.getAtributosMercadoLivre() == null
+                ? new java.util.ArrayList<>()
+                : new java.util.ArrayList<>(dadosNovos.getAtributosMercadoLivre()));
         if (dadosNovos.getImagens() != null && !dadosNovos.getImagens().isEmpty()) {
             existente.setImagens(dadosNovos.getImagens());
         }
@@ -75,7 +80,9 @@ public class ProdutoService {
         return produtoRepository.save(existente);
     }
 
-    /** RN008 - produtos ja vendidos nao sao excluidos fisicamente, apenas inativados. */
+    /**
+     * RN008 - produtos ja vendidos nao sao excluidos fisicamente, apenas inativados.
+     */
     @Transactional
     public void inativar(Long id) {
         Produto produto = buscarPorId(id);
@@ -93,20 +100,21 @@ public class ProdutoService {
     }
 
     @Transactional
-    public void movimentarEstoque(Long produtoId, TipoMovimentacaoEstoque tipo, int quantidade, Long pedidoId, String observacao) {
+    public void movimentarEstoque(Long produtoId, TipoMovimentacaoEstoque tipo, int quantidade, Long pedidoId,
+                                  String observacao) {
         Produto produto = buscarPorId(produtoId);
         estoqueService.registrarMovimentacao(produto, tipo, quantidade, pedidoId, observacao);
-    }
-
-    public Produto buscarPorId(Long id) {
-        return produtoRepository.findById(id)
-                .orElseThrow(() -> new RecursoNaoEncontradoException("Produto nao encontrado: id " + id));
     }
 
     @Transactional
     public Produto salvarAlteracoesDeImagem(Produto produto) {
         produto.setAtualizadoEm(LocalDateTime.now());
         return produtoRepository.save(produto);
+    }
+
+    public Produto buscarPorId(Long id) {
+        return produtoRepository.findById(id)
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Produto nao encontrado: id " + id));
     }
 
     public Produto buscarPorCodigo(String codigo) {
@@ -118,7 +126,9 @@ public class ProdutoService {
         return produtoRepository.findAll();
     }
 
-    /** RN009 - somente produtos ATIVOS aparecem no catalogo/home publicos. */
+    /**
+     * RN009 - somente produtos ATIVOS aparecem no catalogo/home publicos.
+     */
     public List<Produto> listarCatalogoPublico() {
         return produtoRepository.findByStatus(StatusProduto.ATIVO);
     }
@@ -127,7 +137,9 @@ public class ProdutoService {
         return produtoRepository.findByNomeContainingIgnoreCaseOrCodigoInternoContainingIgnoreCase(termo, termo);
     }
 
-    /** RN011/RN012 - valida quantidade minima (1) e limite de estoque disponivel. */
+    /**
+     * RN011/RN012 - valida quantidade minima (1) e limite de estoque disponivel.
+     */
     public void validarSelecaoQuantidade(Produto produto, int quantidade) {
         if (quantidade < 1) {
             throw new RegraNegocioException("RN011: quantidade minima para aquisicao e 1 unidade.");

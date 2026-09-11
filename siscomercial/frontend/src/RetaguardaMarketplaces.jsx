@@ -40,6 +40,9 @@ export default function RetaguardaMarketplaces() {
   const [identificadorExterno, setIdentificadorExterno] = useState("");
   const [processando, setProcessando] = useState(false);
   const [integracaoSelecionada, setIntegracaoSelecionada] = useState(null);
+  const [atributosObrigatorios, setAtributosObrigatorios] = useState([]);
+  const [carregandoAtributos, setCarregandoAtributos] = useState(false);
+  const [erroAtributos, setErroAtributos] = useState("");
   const popupRef = useRef(null);
   const pollingRef = useRef(null);
 
@@ -77,6 +80,97 @@ export default function RetaguardaMarketplaces() {
     }),
     [integracoes],
   );
+
+  useEffect(() => {
+    async function carregarAtributosProduto() {
+      const produto = produtos.find(
+        (item) => String(item.id) === String(produtoSelecionado),
+      );
+      if (!integracaoSelecionada?.id || !produto?.categoriaMercadoLivreId) {
+        setAtributosObrigatorios([]);
+        setErroAtributos("");
+        return;
+      }
+
+      try {
+        setCarregandoAtributos(true);
+        setErroAtributos("");
+        const atributos = await api.listarAtributosCategoriaMercadoLivre(
+          integracaoSelecionada.id,
+          produto.categoriaMercadoLivreId,
+        );
+        setAtributosObrigatorios(
+          (atributos || []).filter(
+            (atributo) =>
+              atributo.tags?.required === true ||
+              atributo.tags?.new_required === true,
+          ),
+        );
+      } catch (e) {
+        setAtributosObrigatorios([]);
+        setErroAtributos(e.message);
+        setErro(e.message);
+      } finally {
+        setCarregandoAtributos(false);
+      }
+    }
+
+    carregarAtributosProduto();
+  }, [integracaoSelecionada?.id, produtoSelecionado, produtos]);
+
+  const produtoSelecionadoDados = useMemo(
+    () =>
+      produtos.find(
+        (item) => String(item.id) === String(produtoSelecionado),
+      ) || null,
+    [produtos, produtoSelecionado],
+  );
+
+  const problemasPreflight = useMemo(() => {
+    const produto = produtoSelecionadoDados;
+    if (!produto) return [];
+
+    const imagens = [produto.imagemPrincipal, ...(produto.imagens || [])].filter(Boolean);
+    const preco = produto.emPromocao
+      ? produto.precoPromocional
+      : produto.precoVenda;
+    const problemas = [];
+
+    if (!produto.categoriaMercadoLivreId || !/^MLB\d+$/.test(produto.categoriaMercadoLivreId)) {
+      problemas.push("Selecione uma categoria Mercado Livre válida usando o preditor de categorias");
+    }
+    if (
+      !(
+        Number(produto.quantidadeEstoque || 0) -
+          Number(produto.quantidadeReservada || 0) >
+        0
+      )
+    ) {
+      problemas.push("Sem estoque disponível");
+    }
+    if (!(Number(preco) > 0)) problemas.push("Preço inválido");
+    if (!imagens.some((url) => /^https?:\/\//i.test(String(url)))) {
+      problemas.push("Sem imagem pública HTTP/HTTPS");
+    }
+
+    if (carregandoAtributos) {
+      problemas.push("Aguardando validação dos atributos obrigatórios");
+    } else if (erroAtributos) {
+      problemas.push("Não foi possível validar os atributos obrigatórios da categoria");
+    } else {
+      const cadastrados = produto.atributosMercadoLivre || [];
+      atributosObrigatorios.forEach((atributo) => {
+        const cadastrado = cadastrados.find(
+          (item) => item.atributoId === atributo.id,
+        );
+        if (!cadastrado?.valueId && !cadastrado?.valueName?.trim()) {
+          problemas.push(`Preencha o atributo obrigatório: ${atributo.name}`);
+        }
+      });
+    }
+
+    return problemas;
+  }, [produtoSelecionadoDados, atributosObrigatorios, carregandoAtributos, erroAtributos]);
 
   function limparFeedback() {
     setErro("");
@@ -419,7 +513,7 @@ export default function RetaguardaMarketplaces() {
             </label>
             <button
               className="botao-marketplace-principal"
-              disabled={!produtoSelecionado || processando}
+              disabled={!produtoSelecionado || processando || problemasPreflight.length > 0}
               onClick={publicar}
             >
               {processando ? "Processando..." : "Publicar no Mercado Livre"}
@@ -439,20 +533,7 @@ export default function RetaguardaMarketplaces() {
               const preco = produto.emPromocao
                 ? produto.precoPromocional
                 : produto.precoVenda;
-              const problemas = [];
-              if (!produto.categoria)
-                problemas.push("Categoria do Mercado Livre não informada");
-              if (
-                !(
-                  Number(produto.quantidadeEstoque || 0) -
-                    Number(produto.quantidadeReservada || 0) >
-                  0
-                )
-              )
-                problemas.push("Sem estoque disponível");
-              if (!(Number(preco) > 0)) problemas.push("Preço inválido");
-              if (!imagens.some((url) => /^https?:\/\//i.test(String(url))))
-                problemas.push("Sem imagem pública HTTP/HTTPS");
+              const problemas = problemasPreflight;
               return (
                 <>
                   <div
@@ -468,7 +549,10 @@ export default function RetaguardaMarketplaces() {
                     </div>
                     <div className="marketplace-preflight-dados">
                       <span>
-                        <b>Categoria:</b> {produto.categoria || "—"}
+                        <b>Categoria:</b>{" "}
+                      {produto.categoriaMercadoLivreNome
+                        ? `${produto.categoriaMercadoLivreNome} — ID: ${produto.categoriaMercadoLivreId}`
+                        : produto.categoriaMercadoLivreId || "—"}
                       </span>
                       <span>
                         <b>Preço:</b>{" "}
@@ -491,6 +575,15 @@ export default function RetaguardaMarketplaces() {
                       <span>
                         <b>Descrição:</b>{" "}
                         {produto.descricao ? "cadastrada" : "não cadastrada"}
+                      </span>
+                      <span>
+                        <b>Atributos obrigatórios:</b>{" "}
+                        {carregandoAtributos
+                          ? "consultando..."
+                          : `${(produto.atributosMercadoLivre || []).filter((item) =>
+                              atributosObrigatorios.some((atributo) => atributo.id === item.atributoId &&
+                                (item.valueId || item.valueName?.trim()))
+                            ).length}/${atributosObrigatorios.length} preenchidos`}
                       </span>
                     </div>
                     {problemas.length > 0 && (

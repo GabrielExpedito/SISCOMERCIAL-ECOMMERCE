@@ -26,6 +26,7 @@ import java.util.Map;
 public class MercadoLivreMarketplaceGateway implements MarketplaceGateway {
     private static final URI ITEMS_URI = URI.create("https://api.mercadolibre.com/items");
     private final CredencialMarketplaceService credencialService;
+    private final MercadoLivreCategoriaService categoriaService;
     private final ObjectMapper objectMapper;
     private final HttpClient httpClient = HttpClient.newBuilder()
             .connectTimeout(Duration.ofSeconds(10))
@@ -42,6 +43,7 @@ public class MercadoLivreMarketplaceGateway implements MarketplaceGateway {
 
         try {
             String token = credencialService.revelar(integracao.getTokenProtegido());
+            validarAtributosObrigatorios(integracao, produto);
             Map<String, Object> corpo = montarCorpoItem(produto);
 
             JsonNode item = executarPost(ITEMS_URI, token, corpo, "publicar o produto no Mercado Livre");
@@ -66,8 +68,8 @@ public class MercadoLivreMarketplaceGateway implements MarketplaceGateway {
         if (produto.getNome() == null || produto.getNome().isBlank()) {
             throw new RegraNegocioException("O produto deve possuir nome para ser publicado.");
         }
-        if (produto.getCategoria() == null || produto.getCategoria().isBlank()) {
-            throw new RegraNegocioException("O produto deve possuir o ID da categoria do Mercado Livre para ser publicado.");
+        if (produto.getCategoriaMercadoLivreId() == null || !produto.getCategoriaMercadoLivreId().matches("MLB\\d+")) {
+            throw new RegraNegocioException("O produto deve possuir uma categoria valida do Mercado Livre (ex.: MLB123456). Use o preditor de categorias antes de publicar.");
         }
         if (produto.getQuantidadeDisponivel() <= 0) {
             throw new RegraNegocioException("O produto precisa ter estoque disponivel para ser publicado.");
@@ -86,7 +88,7 @@ public class MercadoLivreMarketplaceGateway implements MarketplaceGateway {
     private Map<String, Object> montarCorpoItem(Produto produto) {
         Map<String, Object> corpo = new LinkedHashMap<>();
         corpo.put("title", produto.getNome());
-        corpo.put("category_id", produto.getCategoria());
+        corpo.put("category_id", produto.getCategoriaMercadoLivreId());
         corpo.put("price", preco(produto));
         corpo.put("currency_id", "BRL");
         corpo.put("available_quantity", produto.getQuantidadeDisponivel());
@@ -94,8 +96,70 @@ public class MercadoLivreMarketplaceGateway implements MarketplaceGateway {
         corpo.put("listing_type_id", "gold_special");
         corpo.put("condition", "new");
         corpo.put("pictures", montarImagens(produto));
+        corpo.put("attributes", montarAtributos(produto));
         return corpo;
     }
+
+    private void validarAtributosObrigatorios(IntegracaoMarketplace integracao, Produto produto) {
+        List<MercadoLivreCategoriaService.AtributoCategoria> atributosCategoria =
+                categoriaService.listarAtributos(integracao, produto.getCategoriaMercadoLivreId());
+
+        for (MercadoLivreCategoriaService.AtributoCategoria atributo : atributosCategoria) {
+            JsonNode tags = atributo.tags();
+            boolean obrigatorio = tags != null && (tags.path("required").asBoolean(false)
+                    || tags.path("new_required").asBoolean(false));
+            if (!obrigatorio) {
+                continue;
+            }
+
+            ProdutoAtributoEncontrado encontrado = encontrarAtributo(produto, atributo.id());
+            if (encontrado == null || (vazio(encontrado.valueId()) && vazio(encontrado.valueName()))) {
+                throw new RegraNegocioException(
+                        "Preencha o atributo obrigatorio do Mercado Livre: " + atributo.name() + "."
+                );
+            }
+        }
+    }
+
+    private ProdutoAtributoEncontrado encontrarAtributo(Produto produto, String atributoId) {
+        if (produto.getAtributosMercadoLivre() == null) {
+            return null;
+        }
+        return produto.getAtributosMercadoLivre().stream()
+                .filter(item -> atributoId.equals(item.getAtributoId()))
+                .map(item -> new ProdutoAtributoEncontrado(item.getValueId(), item.getValueName()))
+                .findFirst()
+                .orElse(null);
+    }
+
+    private List<Map<String, Object>> montarAtributos(Produto produto) {
+        List<Map<String, Object>> atributos = new ArrayList<>();
+        if (produto.getAtributosMercadoLivre() == null) {
+            return atributos;
+        }
+
+        produto.getAtributosMercadoLivre().stream()
+                .filter(item -> !vazio(item.getAtributoId()))
+                .filter(item -> !vazio(item.getValueId()) || !vazio(item.getValueName()))
+                .forEach(item -> {
+                    Map<String, Object> atributo = new LinkedHashMap<>();
+                    atributo.put("id", item.getAtributoId());
+                    if (!vazio(item.getValueId())) {
+                        atributo.put("value_id", item.getValueId());
+                    }
+                    if (!vazio(item.getValueName())) {
+                        atributo.put("value_name", item.getValueName());
+                    }
+                    atributos.add(atributo);
+                });
+        return atributos;
+    }
+
+    private boolean vazio(String valor) {
+        return valor == null || valor.isBlank();
+    }
+
+    private record ProdutoAtributoEncontrado(String valueId, String valueName) {}
 
     private List<Map<String, String>> montarImagens(Produto produto) {
         List<Map<String, String>> imagens = new ArrayList<>();

@@ -11,6 +11,7 @@ com\siscomercial\ecommerce\model\DTO\MarketplaceDTOs$IntegracaoResponse.class
 com\siscomercial\ecommerce\controller\ProdutoImagemController.class
 com\siscomercial\ecommerce\model\DTO\MarketplaceDTOs$UrlAutorizacaoResponse.class
 com\siscomercial\ecommerce\model\DTO\RetaguardaDTOs$RetaguardaPedidoDetalheDTO.class
+com\siscomercial\ecommerce\marketplace\MercadoLivreCategoriaService$AtributoPrevisto.class
 com\siscomercial\ecommerce\service\EstoqueService.class
 com\siscomercial\ecommerce\model\DTO\MarketplaceDTOs$PublicarProdutoRequest.class
 com\siscomercial\ecommerce\model\HistoricoStatusPedido.class
@@ -20,6 +21,7 @@ com\siscomercial\ecommerce\controller\MarketplaceController.class
 com\siscomercial\ecommerce\service\WhatsAppService$ResultadoEnvio.class
 com\siscomercial\ecommerce\marketplace\MarketplaceGateway.class
 com\siscomercial\ecommerce\model\DTO\RetaguardaDTOs$RetaguardaPedidoResumoDTO.class
+com\siscomercial\ecommerce\marketplace\MercadoLivreCategoriaService$AtributoCategoria.class
 com\siscomercial\ecommerce\model\DTO\MarketplaceDTOs$PublicacaoResponse.class
 com\siscomercial\ecommerce\marketplace\MarketplaceGateway$ResultadoPublicacao.class
 com\siscomercial\ecommerce\repository\HistoricoIntegracaoMarketplaceRepository.class
@@ -67,6 +69,7 @@ com\siscomercial\ecommerce\ai\AgenteAssistantFactory.class
 com\siscomercial\ecommerce\model\HistoricoPreco.class
 com\siscomercial\ecommerce\repository\PedidoRepository.class
 com\siscomercial\ecommerce\config\CustomOAuth2UserService.class
+com\siscomercial\ecommerce\marketplace\MercadoLivreMarketplaceGateway$ProdutoAtributoEncontrado.class
 com\siscomercial\ecommerce\model\StatusProduto.class
 com\siscomercial\ecommerce\repository\ClienteRepository.class
 com\siscomercial\ecommerce\model\Pagamento.class
@@ -76,6 +79,7 @@ com\siscomercial\ecommerce\service\FreteService$CotacaoFrete.class
 com\siscomercial\ecommerce\config\SecurityConfig.class
 com\siscomercial\ecommerce\controller\AgenteChatController$MensagemRequest.class
 com\siscomercial\ecommerce\ai\AgenteFerramentas.class
+com\siscomercial\ecommerce\marketplace\MercadoLivreCategoriaService$CategoriaSugestao.class
 com\siscomercial\ecommerce\config\UploadResourceConfig.class
 com\siscomercial\ecommerce\model\StatusPublicacaoMarketplace.class
 com\siscomercial\ecommerce\service\ClienteService.class
@@ -94,9 +98,11 @@ com\siscomercial\ecommerce\model\DTO\RetaguardaDTOs$PagamentoDTO.class
 com\siscomercial\ecommerce\service\NumeroPedidoService.class
 com\siscomercial\ecommerce\controller\PedidoController.class
 com\siscomercial\ecommerce\service\NotaFiscalService.class
+com\siscomercial\ecommerce\marketplace\MercadoLivreCategoriaService.class
 com\siscomercial\ecommerce\model\Cliente.class
 com\siscomercial\ecommerce\model\DTO\RetaguardaDTOs$ItemPedidoDTO.class
 com\siscomercial\ecommerce\ai\StubChatLanguageModel.class
+com\siscomercial\ecommerce\model\AtributoMercadoLivre.class
 com\siscomercial\ecommerce\model\DTO\RetaguardaDTOs$FaturarPedidoAdminRequest.class
 com\siscomercial\ecommerce\model\DTO\RetaguardaDTOs$HistoricoStatusDTO.class
 com\siscomercial\ecommerce\repository\IntegracaoMarketplaceRepository.class

@@ -82,6 +82,12 @@ export const api = {
       method: "POST",
     }),
 
+  preverCategoriasMercadoLivre: (integracaoId, termo) =>
+    request(`/retaguarda/marketplaces/${integracaoId}/mercado-livre/categorias?q=${encodeURIComponent(termo)}`),
+
+  listarAtributosCategoriaMercadoLivre: (integracaoId, categoryId) =>
+    request(`/retaguarda/marketplaces/${integracaoId}/mercado-livre/categorias/${encodeURIComponent(categoryId)}/atributos`),
+
   listarProdutosRetaguarda: () => request("/retaguarda/produtos"),
 
   buscarProdutoRetaguarda: (id) =>

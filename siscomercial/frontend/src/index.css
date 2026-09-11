@@ -1553,3 +1553,148 @@ button {
     padding-right: 11px;
   }
 }
+
+.produto-categoria-mercado-livre {
+  grid-column: 1 / -1;
+}
+
+.produto-categoria-busca {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.produto-categoria-busca input {
+  flex: 1;
+}
+
+.produto-categoria-selecionada {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 10px;
+  padding: 12px 14px;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  background: #f8fafc;
+}
+
+.produto-categoria-selecionada span {
+  font-family: monospace;
+  color: #475569;
+}
+
+.produto-categorias-sugestoes,
+.produto-categoria-atributos {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.produto-categoria-sugestao {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 14px;
+  border: 1px solid #dbe3ef;
+  border-radius: 10px;
+  background: #fff;
+  text-align: left;
+  cursor: pointer;
+}
+
+.produto-categoria-sugestao:hover {
+  border-color: #94a3b8;
+}
+
+.produto-categoria-sugestao span:first-child {
+  display: grid;
+  gap: 4px;
+}
+
+.produto-categoria-sugestao small {
+  color: #64748b;
+}
+
+.produto-categoria-atributos ul {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.produto-categoria-atributos li {
+  margin: 4px 0;
+}
+
+.produto-categoria-atributos li span {
+  margin-left: 6px;
+  font-size: 12px;
+  color: #b91c1c;
+}
+
+.produto-categoria-selecionada {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 8px;
+  padding: 10px 12px;
+  border: 1px solid #d9d7ff;
+  border-radius: 10px;
+  background: #faf9ff;
+}
+
+.produto-categoria-selecionada strong {
+  font-size: 14px;
+}
+
+.produto-categoria-selecionada span {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.produto-categoria-atributos {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 14px;
+  padding: 14px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.produto-categoria-atributos-cabecalho {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.produto-categoria-atributos-cabecalho strong {
+  font-size: 14px;
+}
+
+.produto-categoria-atributos-cabecalho small {
+  color: #6b7280;
+}
+
+.produto-categoria-atributos-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.produto-atributo-campo {
+  margin: 0;
+}
+
+.produto-atributo-obrigatorio {
+  font-weight: 700;
+}
+
+@media (max-width: 800px) {
+  .produto-categoria-atributos-form {
+    grid-template-columns: 1fr;
+  }
+}

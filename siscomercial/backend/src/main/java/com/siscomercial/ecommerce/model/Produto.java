@@ -42,7 +42,25 @@ public class Produto {
     @Column(name = "quantidade_reservada", nullable = false)
     private Integer quantidadeReservada = 0;
 
+    /** Categoria comercial interna do produto. */
     private String categoria;
+
+    @Column(name = "categoria_mercado_livre_id")
+    private String categoriaMercadoLivreId;
+
+    @Column(name = "categoria_mercado_livre_nome")
+    private String categoriaMercadoLivreNome;
+
+    /**
+     * Atributos dinamicos informados para a publicacao no Mercado Livre.
+     * A estrutura e generica porque os atributos variam conforme a categoria.
+     */
+    @ElementCollection
+    @CollectionTable(
+            name = "produto_mercado_livre_atributo",
+            joinColumns = @JoinColumn(name = "produto_id")
+    )
+    private List<AtributoMercadoLivre> atributosMercadoLivre = new ArrayList<>();
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

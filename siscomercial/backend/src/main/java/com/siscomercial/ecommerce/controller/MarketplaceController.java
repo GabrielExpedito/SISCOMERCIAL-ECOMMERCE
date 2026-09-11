@@ -2,6 +2,7 @@ package com.siscomercial.ecommerce.controller;
 
 import com.siscomercial.ecommerce.marketplace.IntegracaoMarketplaceService;
 import com.siscomercial.ecommerce.marketplace.MarketplaceOrchestratorService;
+import com.siscomercial.ecommerce.marketplace.MercadoLivreCategoriaService;
 import com.siscomercial.ecommerce.model.IntegracaoMarketplace;
 import com.siscomercial.ecommerce.model.PublicacaoMarketplace;
 import com.siscomercial.ecommerce.model.DTO.MarketplaceDTOs.*;
@@ -16,6 +17,7 @@ import java.util.List;
 public class MarketplaceController {
     private final IntegracaoMarketplaceService integracaoService;
     private final MarketplaceOrchestratorService orchestratorService;
+    private final MercadoLivreCategoriaService categoriaService;
 
     @GetMapping
     public List<IntegracaoResponse> listar() { return integracaoService.listar().stream().map(this::resumo).toList(); }
@@ -43,6 +45,22 @@ public class MarketplaceController {
 
     @PostMapping("/{id}/diagnostico")
     public IntegracaoResponse diagnosticar(@PathVariable Long id) { return resumo(integracaoService.diagnosticar(id)); }
+
+    /** Sugere categorias reais MLB a partir do titulo/nome do produto. */
+    @GetMapping("/{id}/mercado-livre/categorias")
+    public List<MercadoLivreCategoriaService.CategoriaSugestao> preverCategorias(
+            @PathVariable Long id,
+            @RequestParam String q) {
+        return categoriaService.preverCategorias(integracaoService.buscar(id), q);
+    }
+
+    /** Retorna a ficha tecnica da categoria selecionada, incluindo atributos required. */
+    @GetMapping("/{id}/mercado-livre/categorias/{categoryId}/atributos")
+    public List<MercadoLivreCategoriaService.AtributoCategoria> listarAtributosCategoria(
+            @PathVariable Long id,
+            @PathVariable String categoryId) {
+        return categoriaService.listarAtributos(integracaoService.buscar(id), categoryId);
+    }
 
     @PostMapping("/publicacoes")
     public PublicacaoResponse publicar(@RequestBody PublicarProdutoRequest request) {
