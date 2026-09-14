@@ -10,5 +10,13 @@ public interface MarketplaceGateway {
 
     ResultadoPublicacao publicar(IntegracaoMarketplace integracao, Produto produto);
 
+    ResultadoOperacao encerrar(IntegracaoMarketplace integracao, String identificadorExterno);
+
+    ResultadoSincronizacao sincronizar(IntegracaoMarketplace integracao, String identificadorExterno);
+
+    record ResultadoOperacao(String status) {}
+
+    record ResultadoSincronizacao(String status, Integer quantidadeDisponivel, String permalink) {}
+
     record ResultadoPublicacao(String identificadorExterno, String urlPublicacao, String status) {}
 }

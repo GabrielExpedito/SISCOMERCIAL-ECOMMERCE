@@ -62,11 +62,50 @@ public class MarketplaceController {
         return categoriaService.listarAtributos(integracaoService.buscar(id), categoryId);
     }
 
+    @GetMapping("/publicacoes")
+    public List<PublicacaoResponse> listarPublicacoes(@RequestParam(required = false) Long integracaoId) {
+        return orchestratorService.listarPublicacoes(integracaoId).stream()
+                .map(this::publicacao)
+                .toList();
+    }
+
+    @PostMapping("/publicacoes/{publicacaoId}/encerrar")
+    public PublicacaoResponse encerrar(@PathVariable Long publicacaoId) {
+        return publicacao(orchestratorService.encerrar(publicacaoId));
+    }
+
+    @PostMapping("/publicacoes/{publicacaoId}/sincronizar")
+    public PublicacaoResponse sincronizar(@PathVariable Long publicacaoId) {
+        return publicacao(orchestratorService.sincronizar(publicacaoId));
+    }
+
+    @PostMapping("/publicacoes/sincronizar")
+    public List<PublicacaoResponse> sincronizarTodas(@RequestParam(required = false) Long integracaoId) {
+        return orchestratorService.sincronizarPublicacoes(integracaoId).stream()
+                .map(this::publicacao)
+                .toList();
+    }
+
     @PostMapping("/publicacoes")
     public PublicacaoResponse publicar(@RequestBody PublicarProdutoRequest request) {
         return publicacao(orchestratorService.publicar(request.integracaoId(), request.produtoId()));
     }
 
     private IntegracaoResponse resumo(IntegracaoMarketplace i) { return new IntegracaoResponse(i.getId(), i.getLojaProprietaria(), i.getMarketplace(), i.getStatus(), i.getIdentificadorExterno(), i.getTokenExpiraEm(), i.getUltimaSincronizacao()); }
-    private PublicacaoResponse publicacao(PublicacaoMarketplace p) { return new PublicacaoResponse(p.getId(), p.getProduto().getId(), p.getIntegracao().getId(), p.getIdentificadorExterno(), p.getUrlPublicacao(), p.getStatus(), p.getQuantidadePublicada(), p.getUltimaSincronizacao(), p.getUltimoErro()); }
+    private PublicacaoResponse publicacao(PublicacaoMarketplace p) {
+        return new PublicacaoResponse(
+                p.getId(),
+                p.getProduto().getId(),
+                p.getIntegracao().getId(),
+                p.getIdentificadorExterno(),
+                p.getUrlPublicacao(),
+                p.getStatus(),
+                p.getQuantidadePublicada(),
+                p.getUltimaSincronizacao(),
+                p.getUltimoErro(),
+                p.getProduto().getNome(),
+                p.getProduto().getCodigoInterno(),
+                p.getProduto().getImagemPrincipal()
+        );
+    }
 }

@@ -139,6 +139,28 @@ export const api = {
       body: JSON.stringify({ integracaoId, produtoId }),
     }),
 
+  encerrarPublicacaoMarketplace: (publicacaoId) =>
+    request(`/retaguarda/marketplaces/publicacoes/${publicacaoId}/encerrar`, {
+      method: "POST",
+    }),
+
+  sincronizarPublicacaoMarketplace: (publicacaoId) =>
+    request(`/retaguarda/marketplaces/publicacoes/${publicacaoId}/sincronizar`, {
+      method: "POST",
+    }),
+
+  sincronizarPublicacoesMarketplace: (integracaoId) =>
+    request(`/retaguarda/marketplaces/publicacoes/sincronizar${integracaoId ? `?integracaoId=${integracaoId}` : ""}`, {
+      method: "POST",
+    }),
+
+  listarPublicacoesMarketplace: (integracaoId) =>
+    request(
+      `/retaguarda/marketplaces/publicacoes${
+        integracaoId ? `?integracaoId=${encodeURIComponent(integracaoId)}` : ""
+      }`,
+    ),
+
   listarPedidosRetaguarda: (filtros = {}) => {
     const parametros = new URLSearchParams();
     Object.entries(filtros).forEach(([chave, valor]) => {

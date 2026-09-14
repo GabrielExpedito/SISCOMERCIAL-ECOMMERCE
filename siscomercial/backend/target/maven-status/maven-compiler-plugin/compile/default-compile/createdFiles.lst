@@ -35,6 +35,7 @@ com\siscomercial\ecommerce\model\ItemPedido.class
 com\siscomercial\ecommerce\model\MovimentacaoEstoque.class
 com\siscomercial\ecommerce\ai\OperacaoConfirmacaoService.class
 com\siscomercial\ecommerce\repository\MovimentacaoEstoqueRepository.class
+com\siscomercial\ecommerce\marketplace\MarketplaceGateway$ResultadoOperacao.class
 com\siscomercial\ecommerce\controller\ClienteController$CadastroClienteRequest.class
 com\siscomercial\ecommerce\config\PasswordConfig.class
 com\siscomercial\ecommerce\model\StatusPedido$1.class
@@ -97,6 +98,7 @@ com\siscomercial\ecommerce\model\DTO\RetaguardaDTOs$EnviarPedidoAdminRequest.cla
 com\siscomercial\ecommerce\model\DTO\RetaguardaDTOs$PagamentoDTO.class
 com\siscomercial\ecommerce\service\NumeroPedidoService.class
 com\siscomercial\ecommerce\controller\PedidoController.class
+com\siscomercial\ecommerce\marketplace\MarketplaceGateway$ResultadoSincronizacao.class
 com\siscomercial\ecommerce\service\NotaFiscalService.class
 com\siscomercial\ecommerce\marketplace\MercadoLivreCategoriaService.class
 com\siscomercial\ecommerce\model\Cliente.class

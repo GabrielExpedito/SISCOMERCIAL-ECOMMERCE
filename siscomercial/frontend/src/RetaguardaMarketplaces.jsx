@@ -1,11 +1,24 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api } from "./api";
 
-const statusLabel = (status) =>
-  (status || "")
-    .replaceAll("_", " ")
-    .toLowerCase()
-    .replace(/(^|\s)\S/g, (l) => l.toUpperCase());
+const statusLabel = (status) => {
+  const labels = {
+    PUBLICADA: "Publicada",
+    PAUSADA: "Pausada",
+    EM_ANALISE: "Em análise",
+    AGUARDANDO_ATIVACAO: "Aguardando ativação",
+    INATIVA: "Inativa",
+    ENCERRADA: "Encerrada",
+    PENDENTE: "Pendente",
+    ERRO: "Erro",
+  };
+
+  return labels[status] ||
+    (status || "")
+      .replaceAll("_", " ")
+      .toLowerCase()
+      .replace(/(^|\s)\S/g, (l) => l.toUpperCase());
+};
 
 const dataHora = (valor) =>
   valor
@@ -43,6 +56,10 @@ export default function RetaguardaMarketplaces() {
   const [atributosObrigatorios, setAtributosObrigatorios] = useState([]);
   const [carregandoAtributos, setCarregandoAtributos] = useState(false);
   const [erroAtributos, setErroAtributos] = useState("");
+  const [anuncios, setAnuncios] = useState([]);
+  const [carregandoAnuncios, setCarregandoAnuncios] = useState(false);
+  const [erroAnuncios, setErroAnuncios] = useState("");
+  const [anuncioSelecionado, setAnuncioSelecionado] = useState(null);
   const popupRef = useRef(null);
   const pollingRef = useRef(null);
 
@@ -117,6 +134,41 @@ export default function RetaguardaMarketplaces() {
 
     carregarAtributosProduto();
   }, [integracaoSelecionada?.id, produtoSelecionado, produtos]);
+
+  const sincronizarAnuncios = useCallback(async () => {
+    if (!integracaoSelecionada?.id || integracaoSelecionada.status !== "ATIVA") {
+      setAnuncios([]);
+      setErroAnuncios("");
+      return;
+    }
+
+    try {
+      setCarregandoAnuncios(true);
+      setErroAnuncios("");
+      const lista = await api.sincronizarPublicacoesMarketplace(
+        integracaoSelecionada.id,
+      );
+      setAnuncios(lista || []);
+    } catch (e) {
+      // Se a sincronização falhar, preservamos a lista local para não ocultar
+      // anúncios já conhecidos. O erro fica disponível na tela.
+      setErroAnuncios(e.message);
+      try {
+        const lista = await api.listarPublicacoesMarketplace(
+          integracaoSelecionada.id,
+        );
+        setAnuncios(lista || []);
+      } catch {
+        // Mantém a última lista conhecida.
+      }
+    } finally {
+      setCarregandoAnuncios(false);
+    }
+  }, [integracaoSelecionada?.id, integracaoSelecionada?.status]);
+
+  useEffect(() => {
+    sincronizarAnuncios();
+  }, [sincronizarAnuncios]);
 
   const produtoSelecionadoDados = useMemo(
     () =>
@@ -293,6 +345,55 @@ export default function RetaguardaMarketplaces() {
       setIntegracaoSelecionada(atualizada);
       setMensagem(
         `Integração ${atualizada.status === "ATIVA" ? "ativada" : "desativada"} com sucesso.`,
+      );
+    } catch (e) {
+      setErro(e.message);
+    } finally {
+      setProcessando(false);
+    }
+  }
+
+  async function atualizarStatusAnuncio(anuncio) {
+    if (!anuncio?.id) return;
+    limparFeedback();
+    try {
+      setProcessando(true);
+      const atualizado = await api.sincronizarPublicacaoMarketplace(anuncio.id);
+      setAnuncios((atual) =>
+        atual.map((item) => (item.id === atualizado.id ? atualizado : item)),
+      );
+      setAnuncioSelecionado((atual) =>
+        atual?.id === atualizado.id ? atualizado : atual,
+      );
+      setMensagem(
+        `Status do anúncio ${atualizado.identificadorExterno || ""} atualizado: ${statusLabel(atualizado.status)}.`,
+      );
+    } catch (e) {
+      setErro(e.message);
+    } finally {
+      setProcessando(false);
+    }
+  }
+
+  async function encerrarAnuncio(anuncio) {
+    if (!anuncio?.id) return;
+    if (anuncio.status !== "PUBLICADA" && anuncio.status !== "PAUSADA") return;
+
+    const confirmar = window.confirm(
+      `Encerrar o anúncio ${anuncio.identificadorExterno || "selecionado"}?\n\nEssa ação é definitiva no Mercado Livre e o anúncio não poderá ser reativado. Para vender novamente, será necessário republicar o produto.`
+    );
+    if (!confirmar) return;
+
+    limparFeedback();
+    try {
+      setProcessando(true);
+      const atualizado = await api.encerrarPublicacaoMarketplace(anuncio.id);
+      setAnuncios((atual) =>
+        atual.map((item) => item.id === atualizado.id ? atualizado : item),
+      );
+      setAnuncioSelecionado(atualizado);
+      setMensagem(
+        `Anúncio ${atualizado.identificadorExterno || ""} encerrado com sucesso no Mercado Livre.`,
       );
     } catch (e) {
       setErro(e.message);
@@ -614,6 +715,196 @@ export default function RetaguardaMarketplaces() {
             </div>
           )}
         </section>
+      )}
+
+      {integracaoSelecionada?.status === "ATIVA" && (
+        <section className="painel-retaguarda marketplace-anuncios">
+          <div className="cabecalho-marketplace">
+            <div className="cabecalho-retaguarda">
+              <h2>Anúncios processados</h2>
+              <p>
+                Consulte os produtos que já foram publicados nesta conta do
+                Mercado Livre.
+              </p>
+            </div>
+            <div className="marketplace-anuncios-cabecalho-acoes">
+              <button
+                type="button"
+                className="botao-secundario"
+                disabled={processando || carregandoAnuncios}
+                onClick={sincronizarAnuncios}
+              >
+                {carregandoAnuncios ? "Sincronizando..." : "Sincronizar status"}
+              </button>
+              <span className="marketplace-anuncios-contador">
+                {anuncios.length} {anuncios.length === 1 ? "anúncio" : "anúncios"}
+              </span>
+            </div>
+          </div>
+
+          {carregandoAnuncios ? (
+            <div className="estado">Carregando anúncios...</div>
+          ) : erroAnuncios ? (
+            <p className="estado erro" role="alert">{erroAnuncios}</p>
+          ) : anuncios.length === 0 ? (
+            <div className="marketplace-vazio marketplace-vazio-anuncios">
+              <div className="marketplace-vazio-icone">↗</div>
+              <h3>Nenhum anúncio processado</h3>
+              <p>
+                Quando um produto for publicado no Mercado Livre, ele aparecerá
+                aqui para consulta.
+              </p>
+            </div>
+          ) : (
+            <div className="marketplace-anuncios-lista">
+              {anuncios.map((anuncio) => (
+                <article className="marketplace-anuncio-card" key={anuncio.id}>
+                  <div className="marketplace-anuncio-imagem">
+                    {anuncio.imagemPrincipal ? (
+                      <img
+                        src={anuncio.imagemPrincipal}
+                        alt={`Imagem de ${anuncio.produtoNome || "produto"}`}
+                      />
+                    ) : (
+                      <span>Sem imagem</span>
+                    )}
+                  </div>
+                  <div className="marketplace-anuncio-conteudo">
+                    <div className="marketplace-anuncio-cabecalho">
+                      <div>
+                        <span className="marketplace-tipo">MERCADO LIVRE</span>
+                        <h3>{anuncio.produtoNome || "Produto sem nome"}</h3>
+                      </div>
+                      <span className={statusClass(anuncio.status)}>
+                        {statusLabel(anuncio.status)}
+                      </span>
+                    </div>
+                    <div className="marketplace-anuncio-dados">
+                      <span>
+                        <strong>ID:</strong> {anuncio.identificadorExterno || "—"}
+                      </span>
+                      <span>
+                        <strong>Código:</strong> {anuncio.produtoCodigoInterno || "—"}
+                      </span>
+                      <span>
+                        <strong>Quantidade:</strong> {anuncio.quantidadePublicada ?? 0}
+                      </span>
+                      <span>
+                        <strong>Sincronizado:</strong> {dataHora(anuncio.ultimaSincronizacao)}
+                      </span>
+                    </div>
+                    <div className="marketplace-anuncio-acoes">
+                      <button
+                        className="botao-secundario"
+                        disabled={processando}
+                        onClick={() => setAnuncioSelecionado(anuncio)}
+                      >
+                        Visualizar
+                      </button>
+                      <button
+                        className="botao-secundario"
+                        disabled={processando}
+                        onClick={() => atualizarStatusAnuncio(anuncio)}
+                      >
+                        Atualizar status
+                      </button>
+                      {anuncio.urlPublicacao && (
+                        <a
+                          className="link-retaguarda"
+                          href={anuncio.urlPublicacao}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          Abrir anúncio ↗
+                        </a>
+                      )}
+                      {(anuncio.status === "PUBLICADA" || anuncio.status === "PAUSADA") && (
+                        <button
+                          className="botao-perigo"
+                          disabled={processando}
+                          onClick={() => encerrarAnuncio(anuncio)}
+                        >
+                          Encerrar anúncio
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
+        </section>
+      )}
+
+      {anuncioSelecionado && (
+        <div className="checkout-backdrop">
+          <section
+            className="modal-retaguarda marketplace-modal marketplace-anuncio-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="anuncio-detalhes"
+          >
+            <button
+              className="checkout-fechar"
+              onClick={() => setAnuncioSelecionado(null)}
+              aria-label="Fechar"
+            >
+              ×
+            </button>
+            <div className="detalhe-cabecalho">
+              <span className="eyebrow">ANÚNCIO PROCESSADO</span>
+              <h2 id="anuncio-detalhes">
+                {anuncioSelecionado.produtoNome || "Produto"}
+              </h2>
+              <p>
+                ID Mercado Livre:{" "}
+                <strong>{anuncioSelecionado.identificadorExterno || "—"}</strong>
+              </p>
+            </div>
+            <div className="marketplace-anuncio-detalhe">
+              {anuncioSelecionado.imagemPrincipal && (
+                <img
+                  src={anuncioSelecionado.imagemPrincipal}
+                  alt={`Imagem de ${anuncioSelecionado.produtoNome || "produto"}`}
+                />
+              )}
+              <div className="marketplace-anuncio-detalhe-dados">
+                <span><strong>Status</strong>{statusLabel(anuncioSelecionado.status)}</span>
+                <span><strong>Código interno</strong>{anuncioSelecionado.produtoCodigoInterno || "—"}</span>
+                <span><strong>Quantidade publicada</strong>{anuncioSelecionado.quantidadePublicada ?? 0}</span>
+                <span><strong>Última sincronização</strong>{dataHora(anuncioSelecionado.ultimaSincronizacao)}</span>
+              </div>
+            </div>
+            <button
+              type="button"
+              className="botao-secundario marketplace-anuncio-sincronizar"
+              disabled={processando}
+              onClick={() => atualizarStatusAnuncio(anuncioSelecionado)}
+            >
+              {processando ? "Sincronizando..." : "Atualizar status no Mercado Livre"}
+            </button>
+            {anuncioSelecionado.urlPublicacao && (
+              <a
+                className="botao-marketplace-principal marketplace-anuncio-link"
+                href={anuncioSelecionado.urlPublicacao}
+                target="_blank"
+                rel="noreferrer"
+              >
+                Abrir anúncio no Mercado Livre ↗
+              </a>
+            )}
+            {(anuncioSelecionado.status === "PUBLICADA" || anuncioSelecionado.status === "PAUSADA") && (
+              <button
+                type="button"
+                className="botao-perigo marketplace-anuncio-encerrar"
+                disabled={processando}
+                onClick={() => encerrarAnuncio(anuncioSelecionado)}
+              >
+                {processando ? "Encerrando..." : "Encerrar anúncio definitivamente"}
+              </button>
+            )}
+          </section>
+        </div>
       )}
 
       {modalNova && (

@@ -10,7 +10,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
@@ -38,13 +41,80 @@ public class MercadoLivreMarketplaceGateway implements MarketplaceGateway {
     }
 
     @Override
+    public ResultadoOperacao encerrar(IntegracaoMarketplace integracao, String identificadorExterno) {
+        if (identificadorExterno == null || identificadorExterno.isBlank()) {
+            throw new RegraNegocioException("A publicacao nao possui identificador externo do Mercado Livre.");
+        }
+
+        try {
+            String token = credencialService.revelar(integracao.getTokenProtegido());
+            URI uri = URI.create(ITEMS_URI + "/" + identificadorExterno);
+            Map<String, String> corpo = Map.of("status", "closed");
+            JsonNode item = executarPut(uri, token, corpo, "encerrar o anuncio no Mercado Livre");
+            String status = item.path("status").asText("closed");
+            if (!"closed".equalsIgnoreCase(status)) {
+                throw new RegraNegocioException(
+                        "O Mercado Livre respondeu ao encerramento, mas o anuncio permaneceu com status: " + status
+                );
+            }
+            return new ResultadoOperacao(status);
+        } catch (RegraNegocioException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new RegraNegocioException("Falha ao encerrar o anuncio no Mercado Livre: " + e.getMessage());
+        }
+    }
+
+    @Override
+    public ResultadoSincronizacao sincronizar(IntegracaoMarketplace integracao, String identificadorExterno) {
+        if (identificadorExterno == null || identificadorExterno.isBlank()) {
+            throw new RegraNegocioException("A publicacao nao possui identificador externo do Mercado Livre.");
+        }
+
+        try {
+            String token = credencialService.revelar(integracao.getTokenProtegido());
+            URI uri = URI.create(ITEMS_URI + "/" + identificadorExterno);
+            HttpRequest request = HttpRequest.newBuilder(uri)
+                    .timeout(Duration.ofSeconds(30))
+                    .header("Authorization", "Bearer " + token)
+                    .header("Accept", "application/json")
+                    .GET()
+                    .build();
+
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            JsonNode item = response.body() == null || response.body().isBlank()
+                    ? objectMapper.createObjectNode()
+                    : objectMapper.readTree(response.body());
+
+            if (response.statusCode() < 200 || response.statusCode() >= 300) {
+                throw new RegraNegocioException(
+                        mensagemErroMercadoLivre(response.statusCode(), item, "consultar o anuncio no Mercado Livre")
+                );
+            }
+
+            String status = item.path("status").asText("").toLowerCase();
+            if (status.isBlank()) {
+                throw new RegraNegocioException("O Mercado Livre nao retornou o status do anuncio " + identificadorExterno + ".");
+            }
+
+            int quantidade = item.path("available_quantity").asInt(0);
+            String permalink = item.path("permalink").asText(null);
+            return new ResultadoSincronizacao(status, quantidade, permalink);
+        } catch (RegraNegocioException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new RegraNegocioException("Falha ao sincronizar o anuncio no Mercado Livre: " + e.getMessage());
+        }
+    }
+
+    @Override
     public ResultadoPublicacao publicar(IntegracaoMarketplace integracao, Produto produto) {
         validarProduto(produto);
 
         try {
             String token = credencialService.revelar(integracao.getTokenProtegido());
             validarAtributosObrigatorios(integracao, produto);
-            Map<String, Object> corpo = montarCorpoItem(produto);
+            Map<String, Object> corpo = montarCorpoItem(produto, token);
 
             JsonNode item = executarPost(ITEMS_URI, token, corpo, "publicar o produto no Mercado Livre");
             String itemId = item.path("id").asText();
@@ -85,7 +155,7 @@ public class MercadoLivreMarketplaceGateway implements MarketplaceGateway {
         }
     }
 
-    private Map<String, Object> montarCorpoItem(Produto produto) {
+    private Map<String, Object> montarCorpoItem(Produto produto, String token) throws Exception {
         Map<String, Object> corpo = new LinkedHashMap<>();
         corpo.put("title", produto.getNome());
         corpo.put("category_id", produto.getCategoriaMercadoLivreId());
@@ -95,7 +165,7 @@ public class MercadoLivreMarketplaceGateway implements MarketplaceGateway {
         corpo.put("buying_mode", "buy_it_now");
         corpo.put("listing_type_id", "gold_special");
         corpo.put("condition", "new");
-        corpo.put("pictures", montarImagens(produto));
+        corpo.put("pictures", montarImagens(produto, token));
         corpo.put("attributes", montarAtributos(produto));
         return corpo;
     }
@@ -161,7 +231,15 @@ public class MercadoLivreMarketplaceGateway implements MarketplaceGateway {
 
     private record ProdutoAtributoEncontrado(String valueId, String valueName) {}
 
-    private List<Map<String, String>> montarImagens(Produto produto) {
+    /**
+     * Envia as imagens para o armazenamento do Mercado Livre antes de criar o item.
+     *
+     * O Mercado Livre aceita URLs públicas em pictures.source, mas o download da imagem
+     * é feito pelos servidores do próprio Mercado Livre. Para não depender de localhost,
+     * ngrok, DNS ou permissões do servidor de origem, fazemos o upload direto para o ML
+     * e utilizamos a secure_url retornada por ele no payload da publicação.
+     */
+    private List<Map<String, String>> montarImagens(Produto produto, String token) throws Exception {
         List<Map<String, String>> imagens = new ArrayList<>();
         List<String> urls = new ArrayList<>();
 
@@ -175,12 +253,153 @@ public class MercadoLivreMarketplaceGateway implements MarketplaceGateway {
                     .forEach(urls::add);
         }
 
-        urls.stream().limit(6).forEach(url -> {
+        for (String url : urls.stream().limit(6).toList()) {
+            String secureUrl = enviarImagemAoMercadoLivre(url, token);
             Map<String, String> imagem = new LinkedHashMap<>();
-            imagem.put("source", url);
+            imagem.put("source", secureUrl);
             imagens.add(imagem);
-        });
+        }
+
+        if (imagens.isEmpty()) {
+            throw new RegraNegocioException(
+                    "Nenhuma imagem valida foi enviada ao Mercado Livre para a publicacao."
+            );
+        }
+
         return imagens;
+    }
+
+    private String enviarImagemAoMercadoLivre(String urlImagem, String token) throws Exception {
+        HttpRequest downloadRequest = HttpRequest.newBuilder(URI.create(urlImagem))
+                .timeout(Duration.ofSeconds(30))
+                .header("Accept", "image/jpeg,image/png,image/*")
+                .GET()
+                .build();
+
+        HttpResponse<byte[]> downloadResponse =
+                httpClient.send(downloadRequest, HttpResponse.BodyHandlers.ofByteArray());
+
+        if (downloadResponse.statusCode() < 200 || downloadResponse.statusCode() >= 300) {
+            throw new RegraNegocioException(
+                    "Nao foi possivel baixar a imagem do produto antes do envio ao Mercado Livre. "
+                            + "HTTP " + downloadResponse.statusCode() + ": " + urlImagem
+            );
+        }
+
+        byte[] conteudo = downloadResponse.body();
+        if (conteudo == null || conteudo.length == 0) {
+            throw new RegraNegocioException("A imagem do produto esta vazia: " + urlImagem);
+        }
+
+        String contentType = downloadResponse.headers()
+                .firstValue("Content-Type")
+                .map(valor -> valor.split(";", 2)[0].trim().toLowerCase())
+                .orElse("image/jpeg");
+
+        if (!contentType.equals("image/jpeg") && !contentType.equals("image/png")) {
+            throw new RegraNegocioException(
+                    "O Mercado Livre aceita JPG/JPEG/PNG para esta integracao. "
+                            + "Content-Type recebido: " + contentType
+            );
+        }
+
+        String extensao = contentType.equals("image/png") ? "png" : "jpg";
+        String nomeArquivo = obterNomeArquivo(urlImagem, extensao);
+        String boundary = "----SiscomercialMercadoLivre" + System.nanoTime();
+
+        byte[] corpoMultipart = montarMultipartImagem(
+                boundary, nomeArquivo, contentType, conteudo
+        );
+
+        URI uri = URI.create("https://api.mercadolibre.com/pictures/items/upload");
+        HttpRequest request = HttpRequest.newBuilder(uri)
+                .timeout(Duration.ofSeconds(60))
+                .header("Authorization", "Bearer " + token)
+                .header("Accept", "application/json")
+                .header("Content-Type", "multipart/form-data; boundary=" + boundary)
+                .POST(HttpRequest.BodyPublishers.ofByteArray(corpoMultipart))
+                .build();
+
+        HttpResponse<String> response =
+                httpClient.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+
+        JsonNode json = response.body() == null || response.body().isBlank()
+                ? objectMapper.createObjectNode()
+                : objectMapper.readTree(response.body());
+
+        if (response.statusCode() < 200 || response.statusCode() >= 300) {
+            throw new RegraNegocioException(
+                    mensagemErroMercadoLivre(
+                            response.statusCode(),
+                            json,
+                            "enviar a imagem do produto ao Mercado Livre"
+                    )
+            );
+        }
+
+        String secureUrl = localizarSecureUrl(json);
+        if (secureUrl == null || secureUrl.isBlank()) {
+            throw new RegraNegocioException(
+                    "O Mercado Livre recebeu a imagem, mas nao retornou uma URL segura para a publicacao."
+            );
+        }
+
+        return secureUrl;
+    }
+
+    private byte[] montarMultipartImagem(
+            String boundary,
+            String nomeArquivo,
+            String contentType,
+            byte[] conteudo
+    ) throws IOException {
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        String inicio = "--" + boundary + "\r\n"
+                + "Content-Disposition: form-data; name=\"file\"; filename=\""
+                + nomeArquivo + "\"\r\n"
+                + "Content-Type: " + contentType + "\r\n\r\n";
+
+        out.write(inicio.getBytes(StandardCharsets.UTF_8));
+        out.write(conteudo);
+        out.write(("\r\n--" + boundary + "--\r\n").getBytes(StandardCharsets.UTF_8));
+        return out.toByteArray();
+    }
+
+    private String obterNomeArquivo(String urlImagem, String extensao) {
+        try {
+            String caminho = URI.create(urlImagem).getPath();
+            String nome = caminho == null ? "" : caminho.substring(caminho.lastIndexOf('/') + 1);
+            nome = nome.replaceAll("[^a-zA-Z0-9._-]", "_");
+            if (nome.isBlank()) {
+                nome = "produto." + extensao;
+            } else if (!nome.toLowerCase().matches(".*\\.(jpg|jpeg|png)$")) {
+                nome = nome + "." + extensao;
+            }
+            return nome;
+        } catch (Exception e) {
+            return "produto." + extensao;
+        }
+    }
+
+    private String localizarSecureUrl(JsonNode json) {
+        JsonNode variations = json.path("variations");
+        if (!variations.isArray()) {
+            return null;
+        }
+
+        String fallback = null;
+        for (JsonNode variation : variations) {
+            String secureUrl = variation.path("secure_url").asText("");
+            if (!secureUrl.isBlank()) {
+                if (variation.path("size").asText("").equals("1920x1920")) {
+                    return secureUrl;
+                }
+                if (fallback == null) {
+                    fallback = secureUrl;
+                }
+            }
+        }
+        return fallback;
     }
 
     private void publicarDescricao(String itemId, String descricao, String token) throws Exception {
@@ -191,6 +410,26 @@ public class MercadoLivreMarketplaceGateway implements MarketplaceGateway {
         Map<String, String> corpo = Map.of("plain_text", descricao);
         URI uri = URI.create(ITEMS_URI + "/" + itemId + "/description");
         executarPost(uri, token, corpo, "enviar a descricao do produto ao Mercado Livre");
+    }
+
+    private JsonNode executarPut(URI uri, String token, Object corpo, String operacao) throws Exception {
+        HttpRequest request = HttpRequest.newBuilder(uri)
+                .timeout(Duration.ofSeconds(30))
+                .header("Authorization", "Bearer " + token)
+                .header("Content-Type", "application/json")
+                .header("Accept", "application/json")
+                .PUT(HttpRequest.BodyPublishers.ofString(objectMapper.writeValueAsString(corpo)))
+                .build();
+
+        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+        JsonNode json = response.body() == null || response.body().isBlank()
+                ? objectMapper.createObjectNode()
+                : objectMapper.readTree(response.body());
+
+        if (response.statusCode() < 200 || response.statusCode() >= 300) {
+            throw new RegraNegocioException(mensagemErroMercadoLivre(response.statusCode(), json, operacao));
+        }
+        return json;
     }
 
     private JsonNode executarPost(URI uri, String token, Object corpo, String operacao) throws Exception {
