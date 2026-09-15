@@ -1,24 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api } from "./api";
 
-const statusLabel = (status) => {
-  const labels = {
-    PUBLICADA: "Publicada",
-    PAUSADA: "Pausada",
-    EM_ANALISE: "Em análise",
-    AGUARDANDO_ATIVACAO: "Aguardando ativação",
-    INATIVA: "Inativa",
-    ENCERRADA: "Encerrada",
-    PENDENTE: "Pendente",
-    ERRO: "Erro",
-  };
-
-  return labels[status] ||
-    (status || "")
-      .replaceAll("_", " ")
-      .toLowerCase()
-      .replace(/(^|\s)\S/g, (l) => l.toUpperCase());
-};
+const statusLabel = (status) =>
+  (status || "")
+    .replaceAll("_", " ")
+    .toLowerCase()
+    .replace(/(^|\s)\S/g, (l) => l.toUpperCase());
 
 const dataHora = (valor) =>
   valor
@@ -60,6 +47,7 @@ export default function RetaguardaMarketplaces() {
   const [carregandoAnuncios, setCarregandoAnuncios] = useState(false);
   const [erroAnuncios, setErroAnuncios] = useState("");
   const [anuncioSelecionado, setAnuncioSelecionado] = useState(null);
+  const [secaoMarketplace, setSecaoMarketplace] = useState("conexao");
   const popupRef = useRef(null);
   const pollingRef = useRef(null);
 
@@ -86,6 +74,16 @@ export default function RetaguardaMarketplaces() {
       if (pollingRef.current) window.clearInterval(pollingRef.current);
     };
   }, [carregarDados]);
+
+  useEffect(() => {
+    const selecionadaExiste = integracaoSelecionada && integracoes.some(
+      (item) => item.id === integracaoSelecionada.id,
+    );
+    if (!selecionadaExiste) {
+      const ativa = integracoes.find((item) => item.status === "ATIVA");
+      setIntegracaoSelecionada(ativa || null);
+    }
+  }, [integracoes, integracaoSelecionada]);
 
   const indicadores = useMemo(
     () => ({
@@ -167,8 +165,10 @@ export default function RetaguardaMarketplaces() {
   }, [integracaoSelecionada?.id, integracaoSelecionada?.status]);
 
   useEffect(() => {
-    sincronizarAnuncios();
-  }, [sincronizarAnuncios]);
+    if (secaoMarketplace === "anuncios") {
+      sincronizarAnuncios();
+    }
+  }, [secaoMarketplace, sincronizarAnuncios]);
 
   const produtoSelecionadoDados = useMemo(
     () =>
@@ -460,278 +460,267 @@ export default function RetaguardaMarketplaces() {
         />
       </section>
 
-      <section className="painel-retaguarda">
-        <div className="cabecalho-marketplace">
-          <div className="cabecalho-retaguarda">
-            <h2>Integrações configuradas</h2>
-            <p>
-              Gerencie as conexões das lojas externas e valide o acesso antes de
-              publicar produtos.
-            </p>
-          </div>
-          <button
-            className="botao-marketplace-principal"
-            onClick={() => {
-              limparFeedback();
-              setModalNova(true);
-            }}
-          >
-            + Conectar Mercado Livre
-          </button>
-        </div>
+      {erro && (
+        <p className="estado erro" role="alert">
+          {erro}
+        </p>
+      )}
+      {mensagem && (
+        <p className="estado sucesso-marketplace" role="status">
+          {mensagem}
+        </p>
+      )}
 
-        {erro && (
-          <p className="estado erro" role="alert">
-            {erro}
-          </p>
-        )}
-        {mensagem && (
-          <p className="estado sucesso-marketplace" role="status">
-            {mensagem}
-          </p>
-        )}
+      <nav className="marketplace-funcionalidades" aria-label="Funcionalidades do marketplace">
+        <button
+          type="button"
+          className={`marketplace-funcionalidade-tab ${secaoMarketplace === "conexao" ? "ativo" : ""}`}
+          onClick={() => setSecaoMarketplace("conexao")}
+        >
+          Testar conexão
+        </button>
+        <button
+          type="button"
+          className={`marketplace-funcionalidade-tab ${secaoMarketplace === "publicacao" ? "ativo" : ""}`}
+          onClick={() => setSecaoMarketplace("publicacao")}
+          disabled={!integracoes.some((item) => item.status === "ATIVA")}
+          title={!integracoes.some((item) => item.status === "ATIVA") ? "Ative uma integração para publicar produtos" : "Publicar produto"}
+        >
+          Publicar produto
+        </button>
+        <button
+          type="button"
+          className={`marketplace-funcionalidade-tab ${secaoMarketplace === "anuncios" ? "ativo" : ""}`}
+          onClick={() => setSecaoMarketplace("anuncios")}
+          disabled={!integracoes.some((item) => item.status === "ATIVA")}
+          title={!integracoes.some((item) => item.status === "ATIVA") ? "Ative uma integração para consultar anúncios" : "Anúncios"}
+        >
+          Anúncios
+        </button>
+      </nav>
 
-        {carregando ? (
-          <div className="estado">Carregando integrações...</div>
-        ) : integracoes.length === 0 ? (
-          <div className="marketplace-vazio">
-            <div className="marketplace-vazio-icone">◎</div>
-            <h3>Nenhum marketplace conectado</h3>
-            <p>
-              Crie a primeira integração e autorize uma conta de teste do
-              Mercado Livre.
-            </p>
+      {secaoMarketplace === "conexao" && (
+        <section className="painel-retaguarda">
+          <div className="cabecalho-marketplace">
+            <div className="cabecalho-retaguarda">
+              <h2>Testar conexão</h2>
+              <p>
+                Gerencie as integrações e valide o acesso das contas do Mercado Livre.
+              </p>
+            </div>
             <button
-              className="botao-marketplace-principal"
-              onClick={() => setModalNova(true)}
+              type="button"
+              className="botao-primario"
+              onClick={() => {
+                limparFeedback();
+                setModalNova(true);
+              }}
             >
-              Conectar Mercado Livre
+              + Conectar Mercado Livre
             </button>
           </div>
-        ) : (
-          <div className="marketplace-lista">
-            {integracoes.map((integracao) => (
-              <article
-                className={`marketplace-card ${integracaoSelecionada?.id === integracao.id ? "selecionada" : ""}`}
-                key={integracao.id}
+
+
+          {carregando ? (
+            <div className="estado">Carregando integrações...</div>
+          ) : integracoes.length === 0 ? (
+            <div className="marketplace-vazio">
+              <div className="marketplace-vazio-icone">◎</div>
+              <h3>Nenhum marketplace conectado</h3>
+              <p>
+                Crie a primeira integração e autorize uma conta do Mercado Livre.
+              </p>
+              <button
+                type="button"
+                className="botao-primario"
+                onClick={() => setModalNova(true)}
               >
-                <div className="marketplace-card-cabecalho">
-                  <div className="marketplace-identidade">
-                    <div className="marketplace-logo">ML</div>
-                    <div>
-                      <span className="marketplace-tipo">MERCADO LIVRE</span>
-                      <h3>{integracao.lojaProprietaria}</h3>
-                      <small>{integracao.identificadorExterno}</small>
+                Conectar Mercado Livre
+              </button>
+            </div>
+          ) : (
+            <div className="marketplace-lista">
+              {integracoes.map((integracao) => (
+                <article
+                  className={`marketplace-card ${integracaoSelecionada?.id === integracao.id ? "selecionada" : ""}`}
+                  key={integracao.id}
+                >
+                  <div className="marketplace-card-cabecalho">
+                    <div className="marketplace-identidade">
+                      <div className="marketplace-logo">ML</div>
+                      <div>
+                        <span className="marketplace-tipo">MERCADO LIVRE</span>
+                        <h3>{integracao.lojaProprietaria}</h3>
+                        <small>{integracao.identificadorExterno}</small>
+                      </div>
                     </div>
+                    <span className={statusClass(integracao.status)}>
+                      {statusLabel(integracao.status)}
+                    </span>
                   </div>
-                  <span className={statusClass(integracao.status)}>
-                    {statusLabel(integracao.status)}
-                  </span>
-                </div>
 
-                <div className="marketplace-metadados">
-                  <span>
-                    <strong>ID:</strong> {integracao.id}
-                  </span>
-                  <span>
-                    <strong>Última sincronização:</strong>{" "}
-                    {dataHora(integracao.ultimaSincronizacao)}
-                  </span>
-                  <span>
-                    <strong>Token expira:</strong>{" "}
-                    {dataHora(integracao.tokenExpiraEm)}
-                  </span>
-                </div>
+                  <div className="marketplace-metadados">
+                    <span><strong>ID:</strong> {integracao.id}</span>
+                    <span><strong>Última sincronização:</strong> {dataHora(integracao.ultimaSincronizacao)}</span>
+                    <span><strong>Token expira:</strong> {dataHora(integracao.tokenExpiraEm)}</span>
+                  </div>
 
-                <div className="marketplace-acoes">
-                  {integracao.status !== "ATIVA" && (
-                    <button
-                      disabled={processando}
-                      onClick={() => autorizar(integracao)}
-                    >
-                      Autorizar Mercado Livre
-                    </button>
-                  )}
-                  {integracao.status === "ATIVA" && (
-                    <button
-                      disabled={processando}
-                      onClick={() => diagnosticar(integracao)}
-                    >
-                      Testar conexão
-                    </button>
-                  )}
-                  {(integracao.status === "ATIVA" ||
-                    integracao.status === "INATIVA") && (
-                    <button
-                      className="botao-secundario"
-                      disabled={processando}
-                      onClick={() => alterarAtivacao(integracao)}
-                    >
-                      {integracao.status === "ATIVA" ? "Desativar" : "Ativar"}
-                    </button>
-                  )}
-                  {integracao.status === "ATIVA" && (
-                    <button
-                      className="link-retaguarda"
-                      onClick={() => setIntegracaoSelecionada(integracao)}
-                    >
-                      Publicar produto
-                    </button>
-                  )}
-                </div>
-              </article>
-            ))}
-          </div>
-        )}
-      </section>
-
-      {integracaoSelecionada?.status === "ATIVA" && (
-        <section className="painel-retaguarda marketplace-publicacao">
-          <div className="cabecalho-retaguarda">
-            <h2>Publicar produto</h2>
-            <p>
-              Selecione um produto cadastrado e envie-o para a integração ativa
-              do Mercado Livre.
-            </p>
-          </div>
-          <div className="publicacao-grid">
-            <label className="campo-marketplace-label">
-              Produto
-              <select
-                value={produtoSelecionado}
-                onChange={(e) => {
-                  setProdutoSelecionado(e.target.value);
-                  setUltimaPublicacao(null);
-                }}
-              >
-                <option value="">Selecione um produto...</option>
-                {produtos.map((produto) => (
-                  <option value={produto.id} key={produto.id}>
-                    {produto.nome} — {produto.codigoInterno || `#${produto.id}`}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <button
-              className="botao-marketplace-principal"
-              disabled={!produtoSelecionado || processando || problemasPreflight.length > 0}
-              onClick={publicar}
-            >
-              {processando ? "Processando..." : "Publicar no Mercado Livre"}
-            </button>
-          </div>
-
-          {produtoSelecionado &&
-            (() => {
-              const produto = produtos.find(
-                (item) => String(item.id) === String(produtoSelecionado),
-              );
-              if (!produto) return null;
-              const imagens = [
-                produto.imagemPrincipal,
-                ...(produto.imagens || []),
-              ].filter(Boolean);
-              const preco = produto.emPromocao
-                ? produto.precoPromocional
-                : produto.precoVenda;
-              const problemas = problemasPreflight;
-              return (
-                <>
-                  <div
-                    className={`marketplace-preflight ${problemas.length ? "invalida" : "valida"}`}
-                  >
-                    <div className="marketplace-preflight-cabecalho">
-                      <strong>Pré-validação da publicação</strong>
-                      <span>
-                        {problemas.length
-                          ? "Ajustes necessários"
-                          : "Dados mínimos preenchidos"}
-                      </span>
-                    </div>
-                    <div className="marketplace-preflight-dados">
-                      <span>
-                        <b>Categoria:</b>{" "}
-                      {produto.categoriaMercadoLivreNome
-                        ? `${produto.categoriaMercadoLivreNome} — ID: ${produto.categoriaMercadoLivreId}`
-                        : produto.categoriaMercadoLivreId || "—"}
-                      </span>
-                      <span>
-                        <b>Preço:</b>{" "}
-                        {Number(preco || 0).toLocaleString("pt-BR", {
-                          style: "currency",
-                          currency: "BRL",
-                        })}
-                      </span>
-                      <span>
-                        <b>Estoque disponível:</b>{" "}
-                        {Math.max(
-                          0,
-                          Number(produto.quantidadeEstoque || 0) -
-                            Number(produto.quantidadeReservada || 0),
-                        )}
-                      </span>
-                      <span>
-                        <b>Imagens:</b> {imagens.length}
-                      </span>
-                      <span>
-                        <b>Descrição:</b>{" "}
-                        {produto.descricao ? "cadastrada" : "não cadastrada"}
-                      </span>
-                      <span>
-                        <b>Atributos obrigatórios:</b>{" "}
-                        {carregandoAtributos
-                          ? "consultando..."
-                          : `${(produto.atributosMercadoLivre || []).filter((item) =>
-                              atributosObrigatorios.some((atributo) => atributo.id === item.atributoId &&
-                                (item.valueId || item.valueName?.trim()))
-                            ).length}/${atributosObrigatorios.length} preenchidos`}
-                      </span>
-                    </div>
-                    {problemas.length > 0 && (
-                      <ul>
-                        {problemas.map((problema) => (
-                          <li key={problema}>{problema}</li>
-                        ))}
-                      </ul>
+                  <div className="marketplace-acoes">
+                    {integracao.status !== "ATIVA" && (
+                      <button
+                        type="button"
+                        className="botao-secundario"
+                        disabled={processando}
+                        onClick={() => autorizar(integracao)}
+                      >
+                        Autorizar Mercado Livre
+                      </button>
+                    )}
+                    {integracao.status === "ATIVA" && (
+                      <button
+                        type="button"
+                        className="botao-secundario"
+                        disabled={processando}
+                        onClick={() => diagnosticar(integracao)}
+                      >
+                        Testar conexão
+                      </button>
+                    )}
+                    {(integracao.status === "ATIVA" || integracao.status === "INATIVA") && (
+                      <button
+                        type="button"
+                        className="botao-secundario"
+                        disabled={processando}
+                        onClick={() => alterarAtivacao(integracao)}
+                      >
+                        {integracao.status === "ATIVA" ? "Desativar" : "Ativar"}
+                      </button>
                     )}
                   </div>
-                </>
-              );
-            })()}
-
-          {ultimaPublicacao?.urlPublicacao && (
-            <div className="marketplace-publicacao-sucesso">
-              <strong>Publicação criada no Mercado Livre</strong>
-              <a
-                href={ultimaPublicacao.urlPublicacao}
-                target="_blank"
-                rel="noreferrer"
-              >
-                Abrir anúncio{" "}
-                {ultimaPublicacao.identificadorExterno
-                  ? `(${ultimaPublicacao.identificadorExterno})`
-                  : ""}
-              </a>
+                </article>
+              ))}
             </div>
           )}
         </section>
       )}
 
-      {integracaoSelecionada?.status === "ATIVA" && (
+      {secaoMarketplace === "publicacao" && (
+        <section className="painel-retaguarda marketplace-publicacao">
+          <div className="cabecalho-marketplace">
+            <div className="cabecalho-retaguarda">
+              <h2>Publicar produto</h2>
+              <p>Selecione a integração e o produto que será enviado ao Mercado Livre.</p>
+            </div>
+          </div>
+
+          {!integracoes.some((item) => item.status === "ATIVA") ? (
+            <div className="marketplace-vazio">
+              <h3>Nenhuma integração ativa</h3>
+              <p>Ative uma integração na funcionalidade Conexão para publicar produtos.</p>
+              <button type="button" className="botao-secundario" onClick={() => setSecaoMarketplace("conexao")}>
+                Ir para conexão
+              </button>
+            </div>
+          ) : (
+            <>
+              <div className="publicacao-grid">
+                <label className="campo-marketplace-label">
+                  Integração
+                  <select
+                    value={integracaoSelecionada?.id || ""}
+                    onChange={(e) => {
+                      const selecionada = integracoes.find((item) => String(item.id) === e.target.value);
+                      setIntegracaoSelecionada(selecionada || null);
+                      setProdutoSelecionado("");
+                      setUltimaPublicacao(null);
+                    }}
+                  >
+                    <option value="">Selecione uma integração...</option>
+                    {integracoes.filter((item) => item.status === "ATIVA").map((integracao) => (
+                      <option value={integracao.id} key={integracao.id}>
+                        {integracao.lojaProprietaria || `Conta ${integracao.id}`}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="campo-marketplace-label">
+                  Produto
+                  <select
+                    value={produtoSelecionado}
+                    onChange={(e) => {
+                      setProdutoSelecionado(e.target.value);
+                      setUltimaPublicacao(null);
+                    }}
+                    disabled={!integracaoSelecionada}
+                  >
+                    <option value="">Selecione um produto...</option>
+                    {produtos.map((produto) => (
+                      <option value={produto.id} key={produto.id}>
+                        {produto.nome} — {produto.codigoInterno || `#${produto.id}`}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <button
+                  type="button"
+                  className="botao-primario"
+                  disabled={!integracaoSelecionada || !produtoSelecionado || processando || problemasPreflight.length > 0}
+                  onClick={publicar}
+                >
+                  {processando ? "Processando..." : "Publicar no Mercado Livre"}
+                </button>
+              </div>
+
+              {produtoSelecionado && (() => {
+                const produto = produtos.find((item) => String(item.id) === String(produtoSelecionado));
+                if (!produto) return null;
+                const imagens = [produto.imagemPrincipal, ...(produto.imagens || [])].filter(Boolean);
+                const preco = produto.emPromocao ? produto.precoPromocional : produto.precoVenda;
+                const problemas = problemasPreflight;
+                return (
+                  <div className={`marketplace-preflight ${problemas.length ? "invalida" : "valida"}`}>
+                    <div className="marketplace-preflight-cabecalho">
+                      <strong>Pré-validação da publicação</strong>
+                      <span>{problemas.length ? "Ajustes necessários" : "Dados mínimos preenchidos"}</span>
+                    </div>
+                    <div className="marketplace-preflight-dados">
+                      <span><b>Categoria:</b> {produto.categoriaMercadoLivreNome ? `${produto.categoriaMercadoLivreNome} — ID: ${produto.categoriaMercadoLivreId}` : produto.categoriaMercadoLivreId || "—"}</span>
+                      <span><b>Preço:</b> {Number(preco || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</span>
+                      <span><b>Estoque disponível:</b> {Math.max(0, Number(produto.quantidadeEstoque || 0) - Number(produto.quantidadeReservada || 0))}</span>
+                      <span><b>Imagens:</b> {imagens.length}</span>
+                      <span><b>Descrição:</b> {produto.descricao ? "cadastrada" : "não cadastrada"}</span>
+                      <span><b>Atributos obrigatórios:</b> {carregandoAtributos ? "consultando..." : `${(produto.atributosMercadoLivre || []).filter((item) => atributosObrigatorios.some((atributo) => atributo.id === item.atributoId && (item.valueId || item.valueName?.trim()))).length}/${atributosObrigatorios.length} preenchidos`}</span>
+                    </div>
+                    {problemas.length > 0 && <ul>{problemas.map((problema) => <li key={problema}>{problema}</li>)}</ul>}
+                  </div>
+                );
+              })()}
+
+              {ultimaPublicacao?.urlPublicacao && (
+                <div className="marketplace-publicacao-sucesso">
+                  <strong>Publicação criada no Mercado Livre</strong>
+                  <a href={ultimaPublicacao.urlPublicacao} target="_blank" rel="noreferrer">
+                    Abrir anúncio {ultimaPublicacao.identificadorExterno ? `(${ultimaPublicacao.identificadorExterno})` : ""}
+                  </a>
+                </div>
+              )}
+            </>
+          )}
+        </section>
+      )}
+
+      {secaoMarketplace === "anuncios" && (
         <section className="painel-retaguarda marketplace-anuncios">
           <div className="cabecalho-marketplace">
             <div className="cabecalho-retaguarda">
               <h2>Anúncios processados</h2>
-              <p>
-                Consulte os produtos que já foram publicados nesta conta do
-                Mercado Livre.
-              </p>
+              <p>Consulte e gerencie os anúncios já processados nesta conta do Mercado Livre.</p>
             </div>
             <div className="marketplace-anuncios-cabecalho-acoes">
               <button
                 type="button"
                 className="botao-secundario"
-                disabled={processando || carregandoAnuncios}
+                disabled={processando || carregandoAnuncios || !integracaoSelecionada}
                 onClick={sincronizarAnuncios}
               >
                 {carregandoAnuncios ? "Sincronizando..." : "Sincronizar status"}
@@ -742,6 +731,27 @@ export default function RetaguardaMarketplaces() {
             </div>
           </div>
 
+          {integracoes.filter((item) => item.status === "ATIVA").length > 1 && (
+            <div className="marketplace-filtro-integracao">
+              <label className="campo-marketplace-label">
+                Conta Mercado Livre
+                <select
+                  value={integracaoSelecionada?.id || ""}
+                  onChange={(e) => {
+                    const selecionada = integracoes.find((item) => String(item.id) === e.target.value);
+                    setIntegracaoSelecionada(selecionada || null);
+                  }}
+                >
+                  {integracoes.filter((item) => item.status === "ATIVA").map((integracao) => (
+                    <option value={integracao.id} key={integracao.id}>
+                      {integracao.lojaProprietaria || `Conta ${integracao.id}`}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+          )}
+
           {carregandoAnuncios ? (
             <div className="estado">Carregando anúncios...</div>
           ) : erroAnuncios ? (
@@ -750,82 +760,34 @@ export default function RetaguardaMarketplaces() {
             <div className="marketplace-vazio marketplace-vazio-anuncios">
               <div className="marketplace-vazio-icone">↗</div>
               <h3>Nenhum anúncio processado</h3>
-              <p>
-                Quando um produto for publicado no Mercado Livre, ele aparecerá
-                aqui para consulta.
-              </p>
+              <p>Quando um produto for publicado no Mercado Livre, ele aparecerá aqui para consulta.</p>
             </div>
           ) : (
             <div className="marketplace-anuncios-lista">
               {anuncios.map((anuncio) => (
                 <article className="marketplace-anuncio-card" key={anuncio.id}>
                   <div className="marketplace-anuncio-imagem">
-                    {anuncio.imagemPrincipal ? (
-                      <img
-                        src={anuncio.imagemPrincipal}
-                        alt={`Imagem de ${anuncio.produtoNome || "produto"}`}
-                      />
-                    ) : (
-                      <span>Sem imagem</span>
-                    )}
+                    {anuncio.imagemPrincipal ? <img src={anuncio.imagemPrincipal} alt={`Imagem de ${anuncio.produtoNome || "produto"}`} /> : <span>Sem imagem</span>}
                   </div>
                   <div className="marketplace-anuncio-conteudo">
                     <div className="marketplace-anuncio-cabecalho">
-                      <div>
-                        <span className="marketplace-tipo">MERCADO LIVRE</span>
-                        <h3>{anuncio.produtoNome || "Produto sem nome"}</h3>
-                      </div>
-                      <span className={statusClass(anuncio.status)}>
-                        {statusLabel(anuncio.status)}
-                      </span>
+                      <div><span className="marketplace-tipo">MERCADO LIVRE</span><h3>{anuncio.produtoNome || "Produto sem nome"}</h3></div>
+                      <span className={statusClass(anuncio.status)}>{statusLabel(anuncio.status)}</span>
                     </div>
                     <div className="marketplace-anuncio-dados">
-                      <span>
-                        <strong>ID:</strong> {anuncio.identificadorExterno || "—"}
-                      </span>
-                      <span>
-                        <strong>Código:</strong> {anuncio.produtoCodigoInterno || "—"}
-                      </span>
-                      <span>
-                        <strong>Quantidade:</strong> {anuncio.quantidadePublicada ?? 0}
-                      </span>
-                      <span>
-                        <strong>Sincronizado:</strong> {dataHora(anuncio.ultimaSincronizacao)}
-                      </span>
+                      <span><strong>ID:</strong> {anuncio.identificadorExterno || "—"}</span>
+                      <span><strong>Código:</strong> {anuncio.produtoCodigoInterno || "—"}</span>
+                      <span><strong>Quantidade:</strong> {anuncio.quantidadePublicada ?? 0}</span>
+                      <span><strong>Sincronizado:</strong> {dataHora(anuncio.ultimaSincronizacao)}</span>
                     </div>
                     <div className="marketplace-anuncio-acoes">
-                      <button
-                        className="botao-secundario"
-                        disabled={processando}
-                        onClick={() => setAnuncioSelecionado(anuncio)}
-                      >
-                        Visualizar
-                      </button>
-                      <button
-                        className="botao-secundario"
-                        disabled={processando}
-                        onClick={() => atualizarStatusAnuncio(anuncio)}
-                      >
-                        Atualizar status
-                      </button>
+                      <button type="button" className="botao-secundario" disabled={processando} onClick={() => setAnuncioSelecionado(anuncio)}>Visualizar</button>
+                      <button type="button" className="botao-secundario" disabled={processando} onClick={() => atualizarStatusAnuncio(anuncio)}>Atualizar status</button>
                       {anuncio.urlPublicacao && (
-                        <a
-                          className="link-retaguarda"
-                          href={anuncio.urlPublicacao}
-                          target="_blank"
-                          rel="noreferrer"
-                        >
-                          Abrir anúncio ↗
-                        </a>
+                        <a className="botao-secundario" href={anuncio.urlPublicacao} target="_blank" rel="noreferrer">Abrir anúncio ↗</a>
                       )}
                       {(anuncio.status === "PUBLICADA" || anuncio.status === "PAUSADA") && (
-                        <button
-                          className="botao-perigo"
-                          disabled={processando}
-                          onClick={() => encerrarAnuncio(anuncio)}
-                        >
-                          Encerrar anúncio
-                        </button>
+                        <button type="button" className="botao-perigo" disabled={processando} onClick={() => encerrarAnuncio(anuncio)}>Encerrar anúncio</button>
                       )}
                     </div>
                   </div>
@@ -838,71 +800,37 @@ export default function RetaguardaMarketplaces() {
 
       {anuncioSelecionado && (
         <div className="checkout-backdrop">
-          <section
-            className="modal-retaguarda marketplace-modal marketplace-anuncio-modal"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="anuncio-detalhes"
-          >
-            <button
-              className="checkout-fechar"
-              onClick={() => setAnuncioSelecionado(null)}
-              aria-label="Fechar"
-            >
-              ×
-            </button>
+          <section className="modal-retaguarda marketplace-modal marketplace-anuncio-modal" role="dialog" aria-modal="true" aria-labelledby="anuncio-detalhes">
+            <button type="button" className="checkout-fechar" onClick={() => setAnuncioSelecionado(null)} aria-label="Fechar">×</button>
             <div className="detalhe-cabecalho">
               <span className="eyebrow">ANÚNCIO PROCESSADO</span>
-              <h2 id="anuncio-detalhes">
-                {anuncioSelecionado.produtoNome || "Produto"}
-              </h2>
-              <p>
-                ID Mercado Livre:{" "}
-                <strong>{anuncioSelecionado.identificadorExterno || "—"}</strong>
-              </p>
+              <h2 id="anuncio-detalhes">{anuncioSelecionado.produtoNome || "Produto"}</h2>
+              <p>ID Mercado Livre: <strong>{anuncioSelecionado.identificadorExterno || "—"}</strong></p>
             </div>
             <div className="marketplace-anuncio-detalhe">
-              {anuncioSelecionado.imagemPrincipal && (
-                <img
-                  src={anuncioSelecionado.imagemPrincipal}
-                  alt={`Imagem de ${anuncioSelecionado.produtoNome || "produto"}`}
-                />
-              )}
+              {anuncioSelecionado.imagemPrincipal && <img src={anuncioSelecionado.imagemPrincipal} alt={`Imagem de ${anuncioSelecionado.produtoNome || "produto"}`} />}
               <div className="marketplace-anuncio-detalhe-dados">
                 <span><strong>Status</strong>{statusLabel(anuncioSelecionado.status)}</span>
                 <span><strong>Código interno</strong>{anuncioSelecionado.produtoCodigoInterno || "—"}</span>
-                <span><strong>Quantidade publicada</strong>{anuncioSelecionado.quantidadePublicada ?? 0}</span>
+                <span><strong>Quantidade</strong>{anuncioSelecionado.quantidadePublicada ?? 0}</span>
                 <span><strong>Última sincronização</strong>{dataHora(anuncioSelecionado.ultimaSincronizacao)}</span>
               </div>
             </div>
-            <button
-              type="button"
-              className="botao-secundario marketplace-anuncio-sincronizar"
-              disabled={processando}
-              onClick={() => atualizarStatusAnuncio(anuncioSelecionado)}
-            >
-              {processando ? "Sincronizando..." : "Atualizar status no Mercado Livre"}
-            </button>
-            {anuncioSelecionado.urlPublicacao && (
-              <a
-                className="botao-marketplace-principal marketplace-anuncio-link"
-                href={anuncioSelecionado.urlPublicacao}
-                target="_blank"
-                rel="noreferrer"
-              >
-                Abrir anúncio no Mercado Livre ↗
-              </a>
-            )}
-            {(anuncioSelecionado.status === "PUBLICADA" || anuncioSelecionado.status === "PAUSADA") && (
-              <button
-                type="button"
-                className="botao-perigo marketplace-anuncio-encerrar"
-                disabled={processando}
-                onClick={() => encerrarAnuncio(anuncioSelecionado)}
-              >
-                {processando ? "Encerrando..." : "Encerrar anúncio definitivamente"}
+            <div className="marketplace-anuncio-modal-acoes">
+              <button type="button" className="botao-secundario" disabled={processando} onClick={() => atualizarStatusAnuncio(anuncioSelecionado)}>
+                {processando ? "Sincronizando..." : "Atualizar status"}
               </button>
-            )}
+              {anuncioSelecionado.urlPublicacao && (
+                <a className="botao-secundario" href={anuncioSelecionado.urlPublicacao} target="_blank" rel="noreferrer">
+                  Abrir anúncio no Mercado Livre ↗
+                </a>
+              )}
+              {(anuncioSelecionado.status === "PUBLICADA" || anuncioSelecionado.status === "PAUSADA") && (
+                <button type="button" className="botao-perigo" disabled={processando} onClick={() => encerrarAnuncio(anuncioSelecionado)}>
+                  {processando ? "Encerrando..." : "Encerrar anúncio definitivamente"}
+                </button>
+              )}
+            </div>
           </section>
         </div>
       )}
