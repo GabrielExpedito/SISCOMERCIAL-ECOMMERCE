@@ -28,7 +28,7 @@ class PedidoMigrationsTest {
                 .locations("classpath:db/migration")
                 .load();
 
-        assertEquals(6, flyway.migrate().migrationsExecuted);
+        assertEquals(10, flyway.migrate().migrationsExecuted);
 
         try (Connection connection = DriverManager.getConnection(url, "sa", "");
              Statement statement = connection.createStatement()) {
@@ -49,6 +49,15 @@ class PedidoMigrationsTest {
                     "SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'INTEGRACAO_MARKETPLACE' AND COLUMN_NAME = 'OAUTH_STATE'");
             oauthState.next();
             assertEquals(1, oauthState.getInt(1));
+
+            var pedidosMarketplace = statement.executeQuery("SELECT COUNT(*) FROM importacao_pedido_marketplace");
+            pedidosMarketplace.next();
+            assertEquals(0, pedidosMarketplace.getInt(1));
+
+            var ultimaSyncPedidos = statement.executeQuery(
+                    "SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'INTEGRACAO_MARKETPLACE' AND COLUMN_NAME = 'ULTIMA_SINCRONIZACAO_PEDIDOS'");
+            ultimaSyncPedidos.next();
+            assertEquals(1, ultimaSyncPedidos.getInt(1));
         }
     }
 }

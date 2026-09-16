@@ -26,6 +26,8 @@ C:\Users\Gabriel Expedito\Documents\siscomercial-ecommerce\SISCOMERCIAL-ECOMMERC
 C:\Users\Gabriel Expedito\Documents\siscomercial-ecommerce\SISCOMERCIAL-ECOMMERCE\siscomercial\backend\src\main\java\com\siscomercial\ecommerce\marketplace\IntegracaoMarketplaceService.java
 C:\Users\Gabriel Expedito\Documents\siscomercial-ecommerce\SISCOMERCIAL-ECOMMERCE\siscomercial\backend\src\main\java\com\siscomercial\ecommerce\marketplace\MarketplaceGateway.java
 C:\Users\Gabriel Expedito\Documents\siscomercial-ecommerce\SISCOMERCIAL-ECOMMERCE\siscomercial\backend\src\main\java\com\siscomercial\ecommerce\marketplace\MarketplaceOrchestratorService.java
+C:\Users\Gabriel Expedito\Documents\siscomercial-ecommerce\SISCOMERCIAL-ECOMMERCE\siscomercial\backend\src\main\java\com\siscomercial\ecommerce\marketplace\MarketplaceOrderSyncOrchestratorService.java
+C:\Users\Gabriel Expedito\Documents\siscomercial-ecommerce\SISCOMERCIAL-ECOMMERCE\siscomercial\backend\src\main\java\com\siscomercial\ecommerce\marketplace\MarketplacePedidoSyncService.java
 C:\Users\Gabriel Expedito\Documents\siscomercial-ecommerce\SISCOMERCIAL-ECOMMERCE\siscomercial\backend\src\main\java\com\siscomercial\ecommerce\marketplace\MercadoLivreCategoriaService.java
 C:\Users\Gabriel Expedito\Documents\siscomercial-ecommerce\SISCOMERCIAL-ECOMMERCE\siscomercial\backend\src\main\java\com\siscomercial\ecommerce\marketplace\MercadoLivreMarketplaceGateway.java
 C:\Users\Gabriel Expedito\Documents\siscomercial-ecommerce\SISCOMERCIAL-ECOMMERCE\siscomercial\backend\src\main\java\com\siscomercial\ecommerce\model\AtributoMercadoLivre.java
@@ -38,6 +40,8 @@ C:\Users\Gabriel Expedito\Documents\siscomercial-ecommerce\SISCOMERCIAL-ECOMMERC
 C:\Users\Gabriel Expedito\Documents\siscomercial-ecommerce\SISCOMERCIAL-ECOMMERCE\siscomercial\backend\src\main\java\com\siscomercial\ecommerce\model\HistoricoIntegracaoMarketplace.java
 C:\Users\Gabriel Expedito\Documents\siscomercial-ecommerce\SISCOMERCIAL-ECOMMERCE\siscomercial\backend\src\main\java\com\siscomercial\ecommerce\model\HistoricoPreco.java
 C:\Users\Gabriel Expedito\Documents\siscomercial-ecommerce\SISCOMERCIAL-ECOMMERCE\siscomercial\backend\src\main\java\com\siscomercial\ecommerce\model\HistoricoStatusPedido.java
+C:\Users\Gabriel Expedito\Documents\siscomercial-ecommerce\SISCOMERCIAL-ECOMMERCE\siscomercial\backend\src\main\java\com\siscomercial\ecommerce\model\ImportacaoItemPedidoMarketplace.java
+C:\Users\Gabriel Expedito\Documents\siscomercial-ecommerce\SISCOMERCIAL-ECOMMERCE\siscomercial\backend\src\main\java\com\siscomercial\ecommerce\model\ImportacaoPedidoMarketplace.java
 C:\Users\Gabriel Expedito\Documents\siscomercial-ecommerce\SISCOMERCIAL-ECOMMERCE\siscomercial\backend\src\main\java\com\siscomercial\ecommerce\model\IntegracaoMarketplace.java
 C:\Users\Gabriel Expedito\Documents\siscomercial-ecommerce\SISCOMERCIAL-ECOMMERCE\siscomercial\backend\src\main\java\com\siscomercial\ecommerce\model\ItemPedido.java
 C:\Users\Gabriel Expedito\Documents\siscomercial-ecommerce\SISCOMERCIAL-ECOMMERCE\siscomercial\backend\src\main\java\com\siscomercial\ecommerce\model\Marketplace.java
@@ -59,6 +63,8 @@ C:\Users\Gabriel Expedito\Documents\siscomercial-ecommerce\SISCOMERCIAL-ECOMMERC
 C:\Users\Gabriel Expedito\Documents\siscomercial-ecommerce\SISCOMERCIAL-ECOMMERCE\siscomercial\backend\src\main\java\com\siscomercial\ecommerce\repository\HistoricoIntegracaoMarketplaceRepository.java
 C:\Users\Gabriel Expedito\Documents\siscomercial-ecommerce\SISCOMERCIAL-ECOMMERCE\siscomercial\backend\src\main\java\com\siscomercial\ecommerce\repository\HistoricoPrecoRepository.java
 C:\Users\Gabriel Expedito\Documents\siscomercial-ecommerce\SISCOMERCIAL-ECOMMERCE\siscomercial\backend\src\main\java\com\siscomercial\ecommerce\repository\HistoricoStatusPedidoRepository.java
+C:\Users\Gabriel Expedito\Documents\siscomercial-ecommerce\SISCOMERCIAL-ECOMMERCE\siscomercial\backend\src\main\java\com\siscomercial\ecommerce\repository\ImportacaoItemPedidoMarketplaceRepository.java
+C:\Users\Gabriel Expedito\Documents\siscomercial-ecommerce\SISCOMERCIAL-ECOMMERCE\siscomercial\backend\src\main\java\com\siscomercial\ecommerce\repository\ImportacaoPedidoMarketplaceRepository.java
 C:\Users\Gabriel Expedito\Documents\siscomercial-ecommerce\SISCOMERCIAL-ECOMMERCE\siscomercial\backend\src\main\java\com\siscomercial\ecommerce\repository\IntegracaoMarketplaceRepository.java
 C:\Users\Gabriel Expedito\Documents\siscomercial-ecommerce\SISCOMERCIAL-ECOMMERCE\siscomercial\backend\src\main\java\com\siscomercial\ecommerce\repository\MovimentacaoEstoqueRepository.java
 C:\Users\Gabriel Expedito\Documents\siscomercial-ecommerce\SISCOMERCIAL-ECOMMERCE\siscomercial\backend\src\main\java\com\siscomercial\ecommerce\repository\PedidoRepository.java

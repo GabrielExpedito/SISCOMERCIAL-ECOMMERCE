@@ -82,16 +82,27 @@ export const api = {
       method: "POST",
     }),
 
+  sincronizarPedidosMarketplace: (id) =>
+    request(
+      `/retaguarda/marketplaces/${id}/mercado-livre/sincronizar-pedidos`,
+      {
+        method: "POST",
+      },
+    ),
+
   preverCategoriasMercadoLivre: (integracaoId, termo) =>
-    request(`/retaguarda/marketplaces/${integracaoId}/mercado-livre/categorias?q=${encodeURIComponent(termo)}`),
+    request(
+      `/retaguarda/marketplaces/${integracaoId}/mercado-livre/categorias?q=${encodeURIComponent(termo)}`,
+    ),
 
   listarAtributosCategoriaMercadoLivre: (integracaoId, categoryId) =>
-    request(`/retaguarda/marketplaces/${integracaoId}/mercado-livre/categorias/${encodeURIComponent(categoryId)}/atributos`),
+    request(
+      `/retaguarda/marketplaces/${integracaoId}/mercado-livre/categorias/${encodeURIComponent(categoryId)}/atributos`,
+    ),
 
   listarProdutosRetaguarda: () => request("/retaguarda/produtos"),
 
-  buscarProdutoRetaguarda: (id) =>
-    request(`/retaguarda/produtos/${id}`),
+  buscarProdutoRetaguarda: (id) => request(`/retaguarda/produtos/${id}`),
 
   criarProdutoRetaguarda: (payload) =>
     request("/retaguarda/produtos", {
@@ -100,10 +111,13 @@ export const api = {
     }),
 
   atualizarProdutoRetaguarda: (id, payload, usuario = "admin") =>
-    request(`/retaguarda/produtos/${id}?usuario=${encodeURIComponent(usuario)}`, {
-      method: "PUT",
-      body: JSON.stringify(payload),
-    }),
+    request(
+      `/retaguarda/produtos/${id}?usuario=${encodeURIComponent(usuario)}`,
+      {
+        method: "PUT",
+        body: JSON.stringify(payload),
+      },
+    ),
 
   inativarProdutoRetaguarda: (id) =>
     request(`/retaguarda/produtos/${id}/inativar`, { method: "POST" }),
@@ -145,14 +159,22 @@ export const api = {
     }),
 
   sincronizarPublicacaoMarketplace: (publicacaoId) =>
-    request(`/retaguarda/marketplaces/publicacoes/${publicacaoId}/sincronizar`, {
-      method: "POST",
-    }),
+    request(
+      `/retaguarda/marketplaces/publicacoes/${publicacaoId}/sincronizar`,
+      {
+        method: "POST",
+      },
+    ),
 
   sincronizarPublicacoesMarketplace: (integracaoId) =>
-    request(`/retaguarda/marketplaces/publicacoes/sincronizar${integracaoId ? `?integracaoId=${integracaoId}` : ""}`, {
-      method: "POST",
-    }),
+    request(
+      `/retaguarda/marketplaces/publicacoes/sincronizar${
+        integracaoId ? `?integracaoId=${encodeURIComponent(integracaoId)}` : ""
+      }`,
+      {
+        method: "POST",
+      },
+    ),
 
   listarPublicacoesMarketplace: (integracaoId) =>
     request(
@@ -165,9 +187,18 @@ export const api = {
     const parametros = new URLSearchParams();
     Object.entries(filtros).forEach(([chave, valor]) => {
       if (valor !== undefined && valor !== null && valor !== "") {
-        const dataInicio = chave === "dataInicio" && /^\d{4}-\d{2}-\d{2}$/.test(valor);
-        const dataFim = chave === "dataFim" && /^\d{4}-\d{2}-\d{2}$/.test(valor);
-        parametros.set(chave, dataInicio ? `${valor}T00:00:00` : dataFim ? `${valor}T23:59:59` : valor);
+        const dataInicio =
+          chave === "dataInicio" && /^\d{4}-\d{2}-\d{2}$/.test(valor);
+        const dataFim =
+          chave === "dataFim" && /^\d{4}-\d{2}-\d{2}$/.test(valor);
+        parametros.set(
+          chave,
+          dataInicio
+            ? `${valor}T00:00:00`
+            : dataFim
+              ? `${valor}T23:59:59`
+              : valor,
+        );
       }
     });
     const query = parametros.toString();
@@ -179,17 +210,24 @@ export const api = {
   listarHistoricoPedidoRetaguarda: (id) =>
     request(`/retaguarda/pedidos/${id}/historico`),
 
-  alterarStatusPedidoRetaguarda: (id, status) => request(`/retaguarda/pedidos/${id}/status`, {
-    method: "POST", body: JSON.stringify({ status }),
-  }),
+  alterarStatusPedidoRetaguarda: (id, status) =>
+    request(`/retaguarda/pedidos/${id}/status`, {
+      method: "POST",
+      body: JSON.stringify({ status }),
+    }),
 
-  faturarPedidoRetaguarda: (id) => request(`/retaguarda/pedidos/${id}/faturar`, { method: "POST" }),
+  faturarPedidoRetaguarda: (id) =>
+    request(`/retaguarda/pedidos/${id}/faturar`, { method: "POST" }),
 
-  enviarPedidoRetaguarda: (id, codigoRastreamento) => request(`/retaguarda/pedidos/${id}/enviar`, {
-    method: "POST", body: JSON.stringify({ codigoRastreamento }),
-  }),
+  enviarPedidoRetaguarda: (id, codigoRastreamento) =>
+    request(`/retaguarda/pedidos/${id}/enviar`, {
+      method: "POST",
+      body: JSON.stringify({ codigoRastreamento }),
+    }),
 
-  cancelarPedidoRetaguarda: (id, motivo) => request(`/retaguarda/pedidos/${id}/cancelar`, {
-    method: "POST", body: JSON.stringify({ motivo }),
-  }),
+  cancelarPedidoRetaguarda: (id, motivo) =>
+    request(`/retaguarda/pedidos/${id}/cancelar`, {
+      method: "POST",
+      body: JSON.stringify({ motivo }),
+    }),
 };

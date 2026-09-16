@@ -27,6 +27,8 @@ class MarketplaceOrchestratorServiceTest {
         MarketplaceGateway gateway = new MarketplaceGateway() {
             public Marketplace marketplace() { return Marketplace.MERCADO_LIVRE; }
             public ResultadoPublicacao publicar(IntegracaoMarketplace i, Produto p) { return new ResultadoPublicacao("MLB1", "https://ml.test/MLB1", "active"); }
+            public ResultadoOperacao encerrar(IntegracaoMarketplace i, String id) { return new ResultadoOperacao("closed"); }
+            public ResultadoSincronizacao sincronizar(IntegracaoMarketplace i, String id) { return new ResultadoSincronizacao("active", 5, "https://ml.test/MLB1"); }
         };
         MarketplaceOrchestratorService service = new MarketplaceOrchestratorService(integracaoRepository, publicacaoRepository,
                 historicoRepository, produtoRepository, List.of(gateway));

@@ -1,6 +1,7 @@
 com\siscomercial\ecommerce\model\FormaPagamento.class
 com\siscomercial\ecommerce\model\Pedido.class
 com\siscomercial\ecommerce\model\TipoMovimentacaoEstoque.class
+com\siscomercial\ecommerce\marketplace\MarketplaceOrderSyncOrchestratorService$ResultadoSincronizacao.class
 com\siscomercial\ecommerce\service\ProdutoService.class
 com\siscomercial\ecommerce\service\EstoqueService$1.class
 com\siscomercial\ecommerce\controller\AgenteChatController$MensagemResponse.class
@@ -14,6 +15,7 @@ com\siscomercial\ecommerce\model\DTO\RetaguardaDTOs$RetaguardaPedidoDetalheDTO.c
 com\siscomercial\ecommerce\marketplace\MercadoLivreCategoriaService$AtributoPrevisto.class
 com\siscomercial\ecommerce\service\EstoqueService.class
 com\siscomercial\ecommerce\model\DTO\MarketplaceDTOs$PublicarProdutoRequest.class
+com\siscomercial\ecommerce\marketplace\MarketplaceOrderSyncOrchestratorService.class
 com\siscomercial\ecommerce\model\HistoricoStatusPedido.class
 com\siscomercial\ecommerce\repository\HistoricoStatusPedidoRepository.class
 com\siscomercial\ecommerce\model\DTO\RetaguardaDTOs$ClienteResumoDTO.class
@@ -25,6 +27,7 @@ com\siscomercial\ecommerce\marketplace\MercadoLivreCategoriaService$AtributoCate
 com\siscomercial\ecommerce\model\DTO\MarketplaceDTOs$PublicacaoResponse.class
 com\siscomercial\ecommerce\marketplace\MarketplaceGateway$ResultadoPublicacao.class
 com\siscomercial\ecommerce\repository\HistoricoIntegracaoMarketplaceRepository.class
+com\siscomercial\ecommerce\repository\ImportacaoItemPedidoMarketplaceRepository.class
 com\siscomercial\ecommerce\controller\AgenteChatController.class
 com\siscomercial\ecommerce\controller\ClienteController.class
 com\siscomercial\ecommerce\model\StatusIntegracaoMarketplace.class
@@ -34,6 +37,7 @@ com\siscomercial\ecommerce\ai\AgenteIAConfig.class
 com\siscomercial\ecommerce\model\ItemPedido.class
 com\siscomercial\ecommerce\model\MovimentacaoEstoque.class
 com\siscomercial\ecommerce\ai\OperacaoConfirmacaoService.class
+com\siscomercial\ecommerce\repository\ImportacaoPedidoMarketplaceRepository.class
 com\siscomercial\ecommerce\repository\MovimentacaoEstoqueRepository.class
 com\siscomercial\ecommerce\marketplace\MarketplaceGateway$ResultadoOperacao.class
 com\siscomercial\ecommerce\controller\ClienteController$CadastroClienteRequest.class
@@ -50,6 +54,7 @@ com\siscomercial\ecommerce\service\FreteService.class
 com\siscomercial\ecommerce\exception\RecursoNaoEncontradoException.class
 com\siscomercial\ecommerce\controller\RetaguardaPedidoController.class
 com\siscomercial\ecommerce\model\DTO\MarketplaceDTOs$CriarIntegracaoRequest.class
+com\siscomercial\ecommerce\marketplace\MarketplacePedidoSyncService.class
 com\siscomercial\ecommerce\service\ImagemProdutoService.class
 com\siscomercial\ecommerce\controller\AuthController.class
 com\siscomercial\ecommerce\model\DTO\RetaguardaDTOs.class
@@ -62,6 +67,8 @@ com\siscomercial\ecommerce\controller\PedidoController$AlterarStatusRequest.clas
 com\siscomercial\ecommerce\model\DTO\RetaguardaDTOs$AlterarStatusAdminRequest.class
 com\siscomercial\ecommerce\marketplace\CredencialMarketplaceService.class
 com\siscomercial\ecommerce\controller\CatalogoController.class
+com\siscomercial\ecommerce\model\ImportacaoItemPedidoMarketplace.class
+com\siscomercial\ecommerce\model\DTO\MarketplaceDTOs$SincronizacaoPedidosResponse.class
 com\siscomercial\ecommerce\ai\ConfirmacaoPendente.class
 com\siscomercial\ecommerce\service\WhatsAppService.class
 com\siscomercial\ecommerce\ai\DadosCadastroProduto.class
@@ -74,6 +81,7 @@ com\siscomercial\ecommerce\marketplace\MercadoLivreMarketplaceGateway$ProdutoAtr
 com\siscomercial\ecommerce\model\StatusProduto.class
 com\siscomercial\ecommerce\repository\ClienteRepository.class
 com\siscomercial\ecommerce\model\Pagamento.class
+com\siscomercial\ecommerce\marketplace\MarketplaceGateway$ResultadoItemPedido.class
 com\siscomercial\ecommerce\model\DTO\UsuarioAtualResponse.class
 com\siscomercial\ecommerce\exception\RegraNegocioException.class
 com\siscomercial\ecommerce\service\FreteService$CotacaoFrete.class
@@ -104,9 +112,11 @@ com\siscomercial\ecommerce\marketplace\MercadoLivreCategoriaService.class
 com\siscomercial\ecommerce\model\Cliente.class
 com\siscomercial\ecommerce\model\DTO\RetaguardaDTOs$ItemPedidoDTO.class
 com\siscomercial\ecommerce\ai\StubChatLanguageModel.class
+com\siscomercial\ecommerce\model\ImportacaoPedidoMarketplace.class
 com\siscomercial\ecommerce\model\AtributoMercadoLivre.class
 com\siscomercial\ecommerce\model\DTO\RetaguardaDTOs$FaturarPedidoAdminRequest.class
 com\siscomercial\ecommerce\model\DTO\RetaguardaDTOs$HistoricoStatusDTO.class
 com\siscomercial\ecommerce\repository\IntegracaoMarketplaceRepository.class
 com\siscomercial\ecommerce\model\DTO\MarketplaceDTOs$AlterarAtivacaoRequest.class
+com\siscomercial\ecommerce\marketplace\MarketplaceGateway$ResultadoPedido.class
 com\siscomercial\ecommerce\marketplace\MarketplaceOrchestratorService.class

@@ -12,6 +12,7 @@ public final class MarketplaceDTOs {
                                      StatusIntegracaoMarketplace status, String identificadorExterno,
                                      LocalDateTime tokenExpiraEm, LocalDateTime ultimaSincronizacao) {}
     public record UrlAutorizacaoResponse(String urlAutorizacao) {}
+    public record SincronizacaoPedidosResponse(int consultados, int processados, int falhas, LocalDateTime sincronizadoEm) {}
     public record PublicacaoResponse(Long id, Long produtoId, Long integracaoId, String identificadorExterno,
                                      String urlPublicacao, StatusPublicacaoMarketplace status, Integer quantidadePublicada,
                                      LocalDateTime ultimaSincronizacao, String ultimoErro,

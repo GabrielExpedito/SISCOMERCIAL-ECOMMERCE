@@ -39,6 +39,7 @@ export default function RetaguardaMarketplaces() {
   const [lojaProprietaria, setLojaProprietaria] = useState("Minha loja");
   const [identificadorExterno, setIdentificadorExterno] = useState("");
   const [processando, setProcessando] = useState(false);
+  const [sincronizandoPedidos, setSincronizandoPedidos] = useState(false);
   const [integracaoSelecionada, setIntegracaoSelecionada] = useState(null);
   const [atributosObrigatorios, setAtributosObrigatorios] = useState([]);
   const [carregandoAtributos, setCarregandoAtributos] = useState(false);
@@ -331,6 +332,22 @@ export default function RetaguardaMarketplaces() {
     }
   }
 
+  async function sincronizarPedidosMarketplace(integracao) {
+    limparFeedback();
+    try {
+      setSincronizandoPedidos(true);
+      const resultado = await api.sincronizarPedidosMarketplace(integracao.id);
+      setMensagem(
+        `Sincronização concluída: ${resultado.consultados} venda(s) consultada(s), ${resultado.processados} processada(s) e ${resultado.falhas} falha(s).`,
+      );
+      await carregarDados();
+    } catch (e) {
+      setErro(e.message);
+    } finally {
+      setSincronizandoPedidos(false);
+    }
+  }
+
   async function alterarAtivacao(integracao) {
     limparFeedback();
     try {
@@ -584,6 +601,16 @@ export default function RetaguardaMarketplaces() {
                         onClick={() => diagnosticar(integracao)}
                       >
                         Testar conexão
+                      </button>
+                    )}
+                    {integracao.status === "ATIVA" && (
+                      <button
+                        type="button"
+                        className="botao-secundario"
+                        disabled={processando || sincronizandoPedidos}
+                        onClick={() => sincronizarPedidosMarketplace(integracao)}
+                      >
+                        {sincronizandoPedidos ? "Sincronizando vendas..." : "Sincronizar vendas"}
                       </button>
                     )}
                     {(integracao.status === "ATIVA" || integracao.status === "INATIVA") && (

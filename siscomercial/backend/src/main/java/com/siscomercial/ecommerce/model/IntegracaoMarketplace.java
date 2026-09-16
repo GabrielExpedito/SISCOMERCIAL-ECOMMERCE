@@ -52,6 +52,9 @@ public class IntegracaoMarketplace {
     @Column(name = "ultima_sincronizacao")
     private LocalDateTime ultimaSincronizacao;
 
+    @Column(name = "ultima_sincronizacao_pedidos")
+    private LocalDateTime ultimaSincronizacaoPedidos;
+
     @Column(name = "criado_em", nullable = false)
     private LocalDateTime criadoEm = LocalDateTime.now();
 
