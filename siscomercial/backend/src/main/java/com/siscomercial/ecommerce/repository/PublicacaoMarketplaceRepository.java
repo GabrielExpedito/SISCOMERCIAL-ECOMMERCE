@@ -1,6 +1,7 @@
 package com.siscomercial.ecommerce.repository;
 
 import com.siscomercial.ecommerce.model.PublicacaoMarketplace;
+import com.siscomercial.ecommerce.model.StatusPublicacaoMarketplace;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 
@@ -12,6 +13,12 @@ public interface PublicacaoMarketplaceRepository extends JpaRepository<Publicaca
     Optional<PublicacaoMarketplace> findByProdutoIdAndIntegracaoId(
             Long produtoId,
             Long integracaoId
+    );
+
+    boolean existsByProdutoIdAndIntegracaoIdAndStatusIn(
+            Long produtoId,
+            Long integracaoId,
+            List<StatusPublicacaoMarketplace> status
     );
 
     Optional<PublicacaoMarketplace> findByIdentificadorExternoAndIntegracaoId(

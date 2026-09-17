@@ -1,0 +1,10 @@
+com\siscomercial\ecommerce\service\PedidoServiceStatusTest.class
+com\siscomercial\ecommerce\migration\PedidoMigrationsTest.class
+com\siscomercial\ecommerce\marketplace\MarketplaceOrchestratorServiceTest$2.class
+com\siscomercial\ecommerce\model\StatusPedidoTest.class
+com\siscomercial\ecommerce\marketplace\MarketplaceOrchestratorServiceTest.class
+com\siscomercial\ecommerce\marketplace\MarketplacePedidoSyncServiceTest.class
+com\siscomercial\ecommerce\marketplace\MarketplaceOrchestratorServiceTest$1.class
+com\siscomercial\ecommerce\marketplace\MarketplaceOrchestratorServiceTest$3.class
+com\siscomercial\ecommerce\model\PedidoJsonSerializationTest.class
+com\siscomercial\ecommerce\controller\RetaguardaPedidoControllerTest.class

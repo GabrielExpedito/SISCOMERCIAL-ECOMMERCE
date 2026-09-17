@@ -1,7 +1,7 @@
 package com.siscomercial.ecommerce.controller;
 
+import com.siscomercial.ecommerce.application.MarketplaceApplicationService;
 import com.siscomercial.ecommerce.marketplace.IntegracaoMarketplaceService;
-import com.siscomercial.ecommerce.marketplace.MarketplaceOrchestratorService;
 import com.siscomercial.ecommerce.marketplace.MercadoLivreCategoriaService;
 import com.siscomercial.ecommerce.model.IntegracaoMarketplace;
 import com.siscomercial.ecommerce.model.PublicacaoMarketplace;
@@ -19,9 +19,8 @@ import java.util.List;
 @RequiredArgsConstructor
 public class MarketplaceController {
     private final IntegracaoMarketplaceService integracaoService;
-    private final MarketplaceOrchestratorService orchestratorService;
     private final MercadoLivreCategoriaService categoriaService;
-    private final com.siscomercial.ecommerce.marketplace.MarketplaceOrderSyncOrchestratorService orderSyncService;
+    private final MarketplaceApplicationService applicationService;
 
     @GetMapping
     public List<IntegracaoResponse> listar() {
@@ -78,7 +77,7 @@ public class MarketplaceController {
 
     @PostMapping("/publicacoes")
     public PublicacaoResponse publicar(@RequestBody PublicarProdutoRequest request) {
-        return publicacao(orchestratorService.publicar(request.integracaoId(), request.produtoId()));
+        return publicacao(applicationService.publicarProduto(request.integracaoId(), request.produtoId()));
     }
 
     /**
@@ -86,7 +85,7 @@ public class MarketplaceController {
      */
     @PostMapping("/{id}/mercado-livre/sincronizar-pedidos")
     public SincronizacaoPedidosResponse sincronizarPedidos(@PathVariable Long id) {
-        var resultado = orderSyncService.sincronizar(id);
+        var resultado = applicationService.sincronizarPedidos(id);
         return new SincronizacaoPedidosResponse(
                 resultado.consultados(),
                 resultado.processados(),
@@ -99,7 +98,7 @@ public class MarketplaceController {
     public List<PublicacaoResponse> listarPublicacoes(
             @RequestParam(required = false) Long integracaoId) {
 
-        return orchestratorService.listarPublicacoes(integracaoId)
+        return applicationService.listarPublicacoes(integracaoId)
                 .stream()
                 .map(this::publicacao)
                 .toList();
@@ -110,7 +109,7 @@ public class MarketplaceController {
             @PathVariable Long publicacaoId) {
 
         return publicacao(
-                orchestratorService.encerrar(publicacaoId)
+                applicationService.encerrarPublicacao(publicacaoId)
         );
     }
 
@@ -119,7 +118,7 @@ public class MarketplaceController {
             @PathVariable Long publicacaoId) {
 
         return publicacao(
-                orchestratorService.sincronizar(publicacaoId)
+                applicationService.sincronizarPublicacao(publicacaoId)
         );
     }
 
@@ -127,7 +126,7 @@ public class MarketplaceController {
     public List<PublicacaoResponse> sincronizarTodas(
             @RequestParam(required = false) Long integracaoId) {
 
-        return orchestratorService.sincronizarPublicacoes(integracaoId)
+        return applicationService.sincronizarPublicacoes(integracaoId)
                 .stream()
                 .map(this::publicacao)
                 .toList();

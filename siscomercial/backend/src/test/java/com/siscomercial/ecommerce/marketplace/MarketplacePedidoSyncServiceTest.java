@@ -44,7 +44,13 @@ class MarketplacePedidoSyncServiceTest {
                 .thenReturn(Optional.of(importacao));
         when(publicacaoRepository.findByIdentificadorExternoAndIntegracaoId("MLB1", 1L))
                 .thenReturn(Optional.of(publicacao));
-        when(importacaoRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        when(importacaoRepository.save(any())).thenAnswer(invocation -> {
+            ImportacaoPedidoMarketplace salva = invocation.getArgument(0);
+            importacao.setItens(salva.getItens());
+            importacao.setStatusExterno(salva.getStatusExterno());
+            importacao.setEstoqueBaixado(salva.isEstoqueBaixado());
+            return salva;
+        });
 
         MarketplaceGateway.ResultadoPedido pedido = pedido("100", "paid", 2);
         service.processar(integracao, pedido);

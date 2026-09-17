@@ -7,8 +7,7 @@ import java.time.LocalDateTime;
 
 /** Uma publicacao independente do produto em uma integracao. */
 @Entity
-@Table(name = "publicacao_marketplace", uniqueConstraints =
-        @UniqueConstraint(name = "uk_publicacao_produto_integracao", columnNames = {"produto_id", "integracao_id"}))
+@Table(name = "publicacao_marketplace")
 @Data
 public class PublicacaoMarketplace {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)

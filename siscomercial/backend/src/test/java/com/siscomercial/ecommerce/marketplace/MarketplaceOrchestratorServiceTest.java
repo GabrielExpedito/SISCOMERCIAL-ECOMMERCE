@@ -5,12 +5,13 @@ import com.siscomercial.ecommerce.model.*;
 import com.siscomercial.ecommerce.repository.*;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
+
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
@@ -36,7 +37,7 @@ class MarketplaceOrchestratorServiceTest {
         Produto produto = new Produto(); produto.setId(3L); produto.setQuantidadeEstoque(5); produto.setQuantidadeReservada(0); produto.setPrecoVenda(new BigDecimal("10.00"));
         when(integracaoRepository.findById(2L)).thenReturn(Optional.of(integracao));
         when(produtoRepository.findById(3L)).thenReturn(Optional.of(produto));
-        when(publicacaoRepository.findByProdutoIdAndIntegracaoId(3L, 2L)).thenReturn(Optional.empty());
+        when(publicacaoRepository.existsByProdutoIdAndIntegracaoIdAndStatusIn(eq(3L), eq(2L), anyList())).thenReturn(false);
         when(publicacaoRepository.save(any())).thenAnswer(i -> i.getArgument(0));
 
         PublicacaoMarketplace resultado = service.publicar(2L, 3L);
@@ -44,6 +45,73 @@ class MarketplaceOrchestratorServiceTest {
         assertEquals("MLB1", resultado.getIdentificadorExterno());
         assertEquals(StatusPublicacaoMarketplace.PUBLICADA, resultado.getStatus());
         verify(historicoRepository).save(any(HistoricoIntegracaoMarketplace.class));
+    }
+
+    @Test
+    void devePermitirNovaPublicacaoQuandoAnteriorEstaEncerrada() {
+        MarketplaceGateway gateway = new MarketplaceGateway() {
+            public Marketplace marketplace() { return Marketplace.MERCADO_LIVRE; }
+            public ResultadoPublicacao publicar(IntegracaoMarketplace i, Produto p) { return new ResultadoPublicacao("MLB2", "https://ml.test/MLB2", "active"); }
+            public ResultadoOperacao encerrar(IntegracaoMarketplace i, String id) { return new ResultadoOperacao("closed"); }
+            public ResultadoSincronizacao sincronizar(IntegracaoMarketplace i, String id) { return new ResultadoSincronizacao("active", 5, "https://ml.test/MLB2"); }
+        };
+        MarketplaceOrchestratorService service = new MarketplaceOrchestratorService(integracaoRepository, publicacaoRepository,
+                historicoRepository, produtoRepository, List.of(gateway));
+
+        IntegracaoMarketplace integracao = new IntegracaoMarketplace();
+        integracao.setId(2L);
+        integracao.setMarketplace(Marketplace.MERCADO_LIVRE);
+        integracao.setStatus(StatusIntegracaoMarketplace.ATIVA);
+
+        Produto produto = new Produto();
+        produto.setId(3L);
+        produto.setQuantidadeEstoque(5);
+        produto.setQuantidadeReservada(0);
+        produto.setPrecoVenda(new BigDecimal("10.00"));
+
+        when(integracaoRepository.findById(2L)).thenReturn(Optional.of(integracao));
+        when(produtoRepository.findById(3L)).thenReturn(Optional.of(produto));
+        when(publicacaoRepository.existsByProdutoIdAndIntegracaoIdAndStatusIn(eq(3L), eq(2L), anyList())).thenReturn(false);
+        when(publicacaoRepository.save(any())).thenAnswer(i -> i.getArgument(0));
+
+        PublicacaoMarketplace resultado = service.publicar(2L, 3L);
+
+        assertEquals("MLB2", resultado.getIdentificadorExterno());
+        assertEquals(StatusPublicacaoMarketplace.PUBLICADA, resultado.getStatus());
+        verify(publicacaoRepository).save(any(PublicacaoMarketplace.class));
+    }
+
+    @Test
+    void deveRejeitarNovaPublicacaoQuandoExistePublicacaoBloqueadora() {
+        MarketplaceGateway gateway = new MarketplaceGateway() {
+            public Marketplace marketplace() { return Marketplace.MERCADO_LIVRE; }
+            public ResultadoPublicacao publicar(IntegracaoMarketplace i, Produto p) {
+                return new ResultadoPublicacao("ML-BLOQUEADO", "https://ml.test/ML-BLOQUEADO", "active");
+            }
+            public ResultadoOperacao encerrar(IntegracaoMarketplace i, String id) {
+                return new ResultadoOperacao("closed");
+            }
+            public ResultadoSincronizacao sincronizar(IntegracaoMarketplace i, String id) {
+                return new ResultadoSincronizacao("active", 5, "https://ml.test/ML-BLOQUEADO");
+            }
+        };
+        MarketplaceOrchestratorService service = new MarketplaceOrchestratorService(integracaoRepository, publicacaoRepository,
+                historicoRepository, produtoRepository, List.of(gateway));
+
+        IntegracaoMarketplace integracao = new IntegracaoMarketplace();
+        integracao.setId(2L);
+        integracao.setMarketplace(Marketplace.MERCADO_LIVRE);
+        integracao.setStatus(StatusIntegracaoMarketplace.ATIVA);
+
+        Produto produto = new Produto();
+        produto.setId(3L);
+
+        when(integracaoRepository.findById(2L)).thenReturn(Optional.of(integracao));
+        when(produtoRepository.findById(3L)).thenReturn(Optional.of(produto));
+        when(publicacaoRepository.existsByProdutoIdAndIntegracaoIdAndStatusIn(eq(3L), eq(2L), anyList())).thenReturn(true);
+
+        assertThrows(RegraNegocioException.class, () -> service.publicar(2L, 3L));
+        verify(publicacaoRepository, never()).save(any());
     }
 
     @Test

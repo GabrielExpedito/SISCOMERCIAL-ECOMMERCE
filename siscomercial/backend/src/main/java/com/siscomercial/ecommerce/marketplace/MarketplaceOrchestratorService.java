@@ -158,8 +158,18 @@ public class MarketplaceOrchestratorService {
                 .orElseThrow(() -> new RecursoNaoEncontradoException("Produto nao encontrado: id " + produtoId));
         MarketplaceGateway gateway = gateways.get(integracao.getMarketplace());
         if (gateway == null) throw new RegraNegocioException("Marketplace ainda nao possui gateway configurado.");
-        if (publicacaoRepository.findByProdutoIdAndIntegracaoId(produtoId, integracaoId).isPresent()) {
-            throw new RegraNegocioException("O produto ja possui publicacao nesta integracao.");
+        java.util.List<StatusPublicacaoMarketplace> statusBloqueadores = java.util.List.of(
+                StatusPublicacaoMarketplace.PENDENTE,
+                StatusPublicacaoMarketplace.PUBLICADA,
+                StatusPublicacaoMarketplace.PAUSADA,
+                StatusPublicacaoMarketplace.EM_ANALISE,
+                StatusPublicacaoMarketplace.AGUARDANDO_ATIVACAO,
+                StatusPublicacaoMarketplace.INATIVA,
+                StatusPublicacaoMarketplace.ERRO
+        );
+        if (publicacaoRepository.existsByProdutoIdAndIntegracaoIdAndStatusIn(
+                produtoId, integracaoId, statusBloqueadores)) {
+            throw new RegraNegocioException("O produto ja possui uma publicacao ativa ou em processamento nesta integracao.");
         }
 
         try {

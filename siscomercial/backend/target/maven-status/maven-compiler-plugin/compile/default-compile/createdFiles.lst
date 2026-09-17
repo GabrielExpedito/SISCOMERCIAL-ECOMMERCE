@@ -89,6 +89,7 @@ com\siscomercial\ecommerce\config\SecurityConfig.class
 com\siscomercial\ecommerce\controller\AgenteChatController$MensagemRequest.class
 com\siscomercial\ecommerce\ai\AgenteFerramentas.class
 com\siscomercial\ecommerce\marketplace\MercadoLivreCategoriaService$CategoriaSugestao.class
+com\siscomercial\ecommerce\application\MarketplaceApplicationService.class
 com\siscomercial\ecommerce\config\UploadResourceConfig.class
 com\siscomercial\ecommerce\model\StatusPublicacaoMarketplace.class
 com\siscomercial\ecommerce\service\ClienteService.class

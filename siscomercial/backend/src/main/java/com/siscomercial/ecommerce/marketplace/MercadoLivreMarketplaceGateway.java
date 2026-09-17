@@ -247,7 +247,9 @@ public class MercadoLivreMarketplaceGateway implements MarketplaceGateway {
 
     private Map<String, Object> montarCorpoItem(Produto produto, String token) throws Exception {
         Map<String, Object> corpo = new LinkedHashMap<>();
-        corpo.put("title", produto.getNome());
+        // Sellers habilitados ao modelo User Products exigem family_name.
+        // O título é gerado pelo Mercado Livre a partir da família e dos atributos.
+        corpo.put("family_name", produto.getNome());
         corpo.put("category_id", produto.getCategoriaMercadoLivreId());
         corpo.put("price", preco(produto));
         corpo.put("currency_id", "BRL");
