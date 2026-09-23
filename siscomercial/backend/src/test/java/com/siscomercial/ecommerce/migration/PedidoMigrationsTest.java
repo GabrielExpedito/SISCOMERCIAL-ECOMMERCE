@@ -55,7 +55,7 @@ class PedidoMigrationsTest {
                     .locations("filesystem:" + migrationDirectory.toAbsolutePath())
                     .load();
 
-            assertEquals(10, flyway.migrate().migrationsExecuted);
+            assertEquals(12, flyway.migrate().migrationsExecuted);
 
             try (Connection connection = DriverManager.getConnection(url, "sa", "");
                  Statement statement = connection.createStatement()) {
@@ -104,6 +104,23 @@ class PedidoMigrationsTest {
                 );
                 ultimaSyncPedidos.next();
                 assertEquals(1, ultimaSyncPedidos.getInt(1));
+                var categoriaShopee = statement.executeQuery(
+                        "SELECT COUNT(*) " +
+                                "FROM INFORMATION_SCHEMA.COLUMNS " +
+                                "WHERE TABLE_NAME = 'PRODUTO' " +
+                                "AND COLUMN_NAME = 'CATEGORIA_SHOPEE_ID'"
+                );
+                categoriaShopee.next();
+                assertEquals(1, categoriaShopee.getInt(1));
+
+                var pesoShopee = statement.executeQuery(
+                        "SELECT COUNT(*) " +
+                                "FROM INFORMATION_SCHEMA.COLUMNS " +
+                                "WHERE TABLE_NAME = 'PRODUTO' " +
+                                "AND COLUMN_NAME = 'PESO_SHOPEE_KG'"
+                );
+                pesoShopee.next();
+                assertEquals(1, pesoShopee.getInt(1));
             }
 
         } finally {
@@ -115,7 +132,7 @@ class PedidoMigrationsTest {
      * O PostgreSQL aceita múltiplos ADD COLUMN no mesmo ALTER TABLE.
      * O H2 utilizado no teste não aceita essa forma, mesmo em
      * MODE=PostgreSQL.
-     *
+     * <p>
      * Por isso somente a cópia temporária da V9 é adaptada para
      * o teste. As migrations reais do projeto permanecem intactas.
      */
@@ -134,7 +151,9 @@ class PedidoMigrationsTest {
                 "V8__garante_imagens_produto.sql",
                 "V9__adiciona_categoria_mercado_livre_produto.sql",
                 "V10__adiciona_categoria_e_atributos_mercado_livre_produto.sql",
-                "V11__cria_importacao_pedidos_marketplace.sql"
+                "V11__cria_importacao_pedidos_marketplace.sql",
+                "V12__permite_historico_publicacoes_marketplace.sql",
+                "V13__adiciona_dados_publicacao_shopee.sql"
         );
 
         try {

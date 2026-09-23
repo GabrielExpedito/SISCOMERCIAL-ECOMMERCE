@@ -19,6 +19,7 @@ import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.UUID;
+import java.util.Map;
 
 /** Configura, ativa e diagnostica contas sem retornar segredos ao cliente. */
 @Service
@@ -31,6 +32,11 @@ public class IntegracaoMarketplaceService {
     @Value("${siscomercial.mercado-livre.client-id:}") private String clientId;
     @Value("${siscomercial.mercado-livre.client-secret:}") private String clientSecret;
     @Value("${siscomercial.mercado-livre.redirect-uri:}") private String redirectUri;
+    @Value("${siscomercial.shopee.partner-id:}") private String shopeePartnerId;
+    @Value("${siscomercial.shopee.partner-key:}") private String shopeePartnerKey;
+    @Value("${siscomercial.shopee.redirect-uri:}") private String shopeeRedirectUri;
+    @Value("${siscomercial.meta.access-token:}") private String metaAccessToken;
+    @Value("${siscomercial.meta.graph-api-version:v24.0}") private String metaGraphApiVersion;
 
     @Transactional
     public IntegracaoMarketplace criarMercadoLivre(String lojaProprietaria, String identificadorExterno) {
@@ -97,6 +103,163 @@ public class IntegracaoMarketplaceService {
     }
 
     @Transactional
+    public IntegracaoMarketplace criarMeta(String lojaProprietaria, String catalogoId) {
+        exigirConfiguracaoMeta();
+        if (lojaProprietaria == null || lojaProprietaria.isBlank() || catalogoId == null || catalogoId.isBlank()) {
+            throw new RegraNegocioException("Loja proprietaria e ID do catalogo Meta sao obrigatorios.");
+        }
+        IntegracaoMarketplace integracao = new IntegracaoMarketplace();
+        integracao.setLojaProprietaria(lojaProprietaria.trim());
+        integracao.setIdentificadorExterno(catalogoId.trim());
+        integracao.setMarketplace(Marketplace.META);
+        integracao.setTokenProtegido(credencialService.proteger(metaAccessToken));
+        integracao.setStatus(StatusIntegracaoMarketplace.CONFIGURADA);
+        return repository.save(integracao);
+    }
+
+    @Transactional
+    public IntegracaoMarketplace diagnosticarMeta(Long id) {
+        IntegracaoMarketplace integracao = buscarMeta(id);
+        try {
+            if (integracao.getTokenProtegido() == null || integracao.getTokenProtegido().isBlank()) {
+                throw new RegraNegocioException("A integracao Meta ainda nao possui credencial valida para diagnostico.");
+            }
+            String token = credencialService.revelar(integracao.getTokenProtegido());
+            HttpRequest request = HttpRequest.newBuilder(URI.create("https://graph.facebook.com/" + (metaGraphApiVersion.startsWith("v") ? metaGraphApiVersion : "v" + metaGraphApiVersion) + "/"
+                            + codificarPath(integracao.getIdentificadorExterno())
+                            + "?fields=id,name,product_count,vertical"))
+                    .header("Authorization", "Bearer " + token).GET().build();
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            JsonNode json = objectMapper.readTree(response.body());
+            if (response.statusCode() < 200 || response.statusCode() >= 300 || json.has("error")) {
+                String mensagem = json.path("error").path("message").asText(json.path("message").asText("erro sem detalhes"));
+                throw new RegraNegocioException("A conta/catalogo Meta nao esta disponivel ou elegivel para esta integracao: " + mensagem);
+            }
+            integracao.setUltimaSincronizacao(LocalDateTime.now());
+            integracao.setStatus(StatusIntegracaoMarketplace.ATIVA);
+            return repository.save(integracao);
+        } catch (RegraNegocioException e) {
+            integracao.setStatus(StatusIntegracaoMarketplace.ERRO);
+            repository.save(integracao);
+            throw e;
+        } catch (Exception e) {
+            integracao.setStatus(StatusIntegracaoMarketplace.ERRO);
+            repository.save(integracao);
+            throw new RegraNegocioException("Falha ao diagnosticar a integracao Meta: " + e.getMessage());
+        }
+    }
+
+    @Transactional
+    public IntegracaoMarketplace criarShopee(String lojaProprietaria, String shopId) {
+        exigirConfiguracaoShopee();
+        if (lojaProprietaria == null || lojaProprietaria.isBlank() || shopId == null || shopId.isBlank()) {
+            throw new RegraNegocioException("Loja proprietaria e shop_id sao obrigatorios.");
+        }
+        IntegracaoMarketplace integracao = new IntegracaoMarketplace();
+        integracao.setLojaProprietaria(lojaProprietaria.trim());
+        integracao.setIdentificadorExterno(shopId.trim());
+        integracao.setMarketplace(Marketplace.SHOPEE);
+        integracao.setStatus(StatusIntegracaoMarketplace.CONFIGURADA);
+        return repository.save(integracao);
+    }
+
+    @Transactional
+    public String iniciarAutorizacaoShopee(Long integracaoId) {
+        exigirConfiguracaoShopee();
+        IntegracaoMarketplace integracao = buscarShopee(integracaoId);
+        String state = UUID.randomUUID().toString();
+        integracao.setOauthState(state);
+        integracao.setOauthStateExpiraEm(LocalDateTime.now().plusMinutes(10));
+        repository.save(integracao);
+        long timestamp = java.time.Instant.now().getEpochSecond();
+        String path = "/api/v2/shop/auth_partner";
+        String sign = assinar(path, timestamp, "", "");
+        return "https://partner.shopeemobile.com" + path + "?partner_id=" + codificar(shopeePartnerId)
+                + "&timestamp=" + timestamp + "&sign=" + sign + "&redirect=" + codificar(shopeeRedirectUri)
+                + "&state=" + codificar(state);
+    }
+
+    @Transactional
+    public IntegracaoMarketplace concluirAutorizacaoShopee(String code, String shopId, String state) {
+        exigirConfiguracaoShopee();
+        if (code == null || code.isBlank() || shopId == null || shopId.isBlank() || state == null || state.isBlank()) {
+            throw new RegraNegocioException("Retorno OAuth da Shopee invalido ou expirado.");
+        }
+        IntegracaoMarketplace integracao = repository.findByOauthState(state)
+                .orElseThrow(() -> new RegraNegocioException("Retorno OAuth da Shopee invalido ou expirado."));
+        if (integracao.getMarketplace() != Marketplace.SHOPEE
+                || integracao.getOauthStateExpiraEm() == null
+                || integracao.getOauthStateExpiraEm().isBefore(LocalDateTime.now())) {
+            throw new RegraNegocioException("Retorno OAuth da Shopee invalido ou expirado.");
+        }
+        try {
+            long timestamp = java.time.Instant.now().getEpochSecond();
+            String path = "/api/v2/auth/token/get";
+            String sign = assinar(path, timestamp, "", "");
+            Map<String, Object> body = Map.of("code", code, "shop_id", Long.parseLong(shopId), "partner_id", Long.parseLong(shopeePartnerId));
+            HttpRequest request = HttpRequest.newBuilder(URI.create("https://partner.shopeemobile.com" + path
+                            + "?partner_id=" + codificar(shopeePartnerId) + "&timestamp=" + timestamp + "&sign=" + sign))
+                    .header("Content-Type", "application/json")
+                    .POST(HttpRequest.BodyPublishers.ofString(objectMapper.writeValueAsString(body)))
+                    .build();
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            JsonNode token = objectMapper.readTree(response.body());
+            if (response.statusCode() < 200 || response.statusCode() >= 300 || token.path("access_token").asText().isBlank()) {
+                throw new RegraNegocioException("Shopee recusou a autorizacao: " + token.path("message").asText("erro sem detalhes"));
+            }
+            integracao.setTokenProtegido(credencialService.proteger(token.path("access_token").asText()));
+            integracao.setCredenciaisProtegidas(credencialService.proteger(token.path("refresh_token").asText()));
+            integracao.setIdentificadorExterno(shopId.trim());
+            integracao.setTokenExpiraEm(LocalDateTime.now().plusSeconds(token.path("expire_in").asLong(0)));
+            integracao.setOauthState(null);
+            integracao.setOauthStateExpiraEm(null);
+            integracao.setUltimaSincronizacao(LocalDateTime.now());
+            integracao.setStatus(StatusIntegracaoMarketplace.ATIVA);
+            return repository.save(integracao);
+        } catch (RegraNegocioException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new RegraNegocioException("Falha ao concluir autorizacao Shopee: " + e.getMessage());
+        }
+    }
+
+    @Transactional
+    public IntegracaoMarketplace diagnosticarShopee(Long id) {
+        IntegracaoMarketplace integracao = buscarShopee(id);
+        if (integracao.getTokenProtegido() == null || integracao.getTokenProtegido().isBlank()) {
+            throw new RegraNegocioException("A integracao Shopee ainda nao possui credencial valida para diagnostico.");
+        }
+        try {
+            String token = credencialService.revelar(integracao.getTokenProtegido());
+            long timestamp = java.time.Instant.now().getEpochSecond();
+            String path = "/api/v2/shop/get_shop_info";
+            String sign = assinar(path, timestamp, token, integracao.getIdentificadorExterno());
+            URI uri = URI.create("https://partner.shopeemobile.com" + path
+                    + "?partner_id=" + codificar(shopeePartnerId)
+                    + "&timestamp=" + timestamp
+                    + "&access_token=" + codificar(token)
+                    + "&shop_id=" + codificar(integracao.getIdentificadorExterno())
+                    + "&sign=" + sign);
+            HttpRequest request = HttpRequest.newBuilder(uri).GET().build();
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            JsonNode json = objectMapper.readTree(response.body());
+            if (response.statusCode() < 200 || response.statusCode() >= 300 || !json.path("error").asText("").isBlank()) {
+                throw new RegraNegocioException("Falha ao diagnosticar a integracao Shopee: "
+                        + json.path("message").asText(json.path("error").asText("erro sem detalhes")));
+            }
+            integracao.setUltimaSincronizacao(LocalDateTime.now());
+            if (integracao.getStatus() == StatusIntegracaoMarketplace.ERRO) {
+                integracao.setStatus(StatusIntegracaoMarketplace.ATIVA);
+            }
+            return repository.save(integracao);
+        } catch (RegraNegocioException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new RegraNegocioException("Falha ao diagnosticar a integracao Shopee: " + e.getMessage());
+        }
+    }
+
+    @Transactional
     public IntegracaoMarketplace alterarAtivacao(Long id, boolean ativa) {
         IntegracaoMarketplace integracao = buscar(id);
         if (ativa && (integracao.getTokenProtegido() == null || integracao.getTokenProtegido().isBlank())) {
@@ -131,6 +294,48 @@ public class IntegracaoMarketplaceService {
         } catch (RegraNegocioException e) { throw e;
         } catch (Exception e) { throw new RegraNegocioException("Falha ao consultar conta Mercado Livre: " + e.getMessage()); }
     }
+    private IntegracaoMarketplace buscarMeta(Long id) {
+        IntegracaoMarketplace i = buscar(id);
+        if (i.getMarketplace() != Marketplace.META) throw new RegraNegocioException("Esta operacao e exclusiva da Meta.");
+        return i;
+    }
+
+    private void exigirConfiguracaoMeta() {
+        if (metaAccessToken == null || metaAccessToken.isBlank()) {
+            throw new RegraNegocioException("Configure META_ACCESS_TOKEN no backend antes de criar a integracao Meta.");
+        }
+    }
+
+    private String codificarPath(String valor) {
+        return URLEncoder.encode(valor, StandardCharsets.UTF_8).replace("+", "%20");
+    }
+
+    private IntegracaoMarketplace buscarShopee(Long id) {
+        IntegracaoMarketplace i = buscar(id);
+        if (i.getMarketplace() != Marketplace.SHOPEE) throw new RegraNegocioException("Esta operacao e exclusiva da Shopee.");
+        return i;
+    }
+
+    private void exigirConfiguracaoShopee() {
+        if (shopeePartnerId.isBlank() || shopeePartnerKey.isBlank() || shopeeRedirectUri.isBlank()) {
+            throw new RegraNegocioException("Configure SHOPEE_PARTNER_ID, SHOPEE_PARTNER_KEY e SHOPEE_REDIRECT_URI no backend.");
+        }
+    }
+
+    private String assinar(String path, long timestamp, String accessToken, String shopId) {
+        try {
+            String base = shopeePartnerId + path + timestamp + accessToken + shopId;
+            javax.crypto.Mac mac = javax.crypto.Mac.getInstance("HmacSHA256");
+            mac.init(new javax.crypto.spec.SecretKeySpec(shopeePartnerKey.getBytes(StandardCharsets.UTF_8), "HmacSHA256"));
+            byte[] digest = mac.doFinal(base.getBytes(StandardCharsets.UTF_8));
+            StringBuilder hex = new StringBuilder(digest.length * 2);
+            for (byte b : digest) hex.append(String.format("%02x", b));
+            return hex.toString();
+        } catch (Exception e) {
+            throw new RegraNegocioException("Nao foi possivel gerar a assinatura da Shopee.");
+        }
+    }
+
     private void exigirConfiguracaoOAuth() { if (clientId.isBlank() || clientSecret.isBlank() || redirectUri.isBlank()) throw new RegraNegocioException("Configure as variaveis de ambiente do Mercado Livre no backend."); }
     private String codificar(String valor) { return URLEncoder.encode(valor, StandardCharsets.UTF_8); }
 }

@@ -66,6 +66,33 @@ export const api = {
       body: JSON.stringify(payload),
     }),
 
+  criarIntegracaoMeta: (payload) =>
+    request("/retaguarda/marketplaces/meta", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+
+  diagnosticarMeta: (id) =>
+    request(`/retaguarda/marketplaces/${id}/meta/diagnostico`, {
+      method: "POST",
+    }),
+
+  criarIntegracaoShopee: (payload) =>
+    request("/retaguarda/marketplaces/shopee", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+
+  iniciarAutorizacaoShopee: (id) =>
+    request(`/retaguarda/marketplaces/${id}/shopee/autorizacao`, {
+      method: "POST",
+    }),
+
+  diagnosticarShopee: (id) =>
+    request(`/retaguarda/marketplaces/${id}/shopee/diagnostico`, {
+      method: "POST",
+    }),
+
   iniciarAutorizacaoMercadoLivre: (id) =>
     request(`/retaguarda/marketplaces/${id}/mercado-livre/autorizacao`, {
       method: "POST",

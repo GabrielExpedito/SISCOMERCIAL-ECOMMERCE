@@ -51,6 +51,13 @@ public class Produto {
     @Column(name = "categoria_mercado_livre_nome")
     private String categoriaMercadoLivreNome;
 
+    /** Categoria e peso utilizados na publicacao via Shopee Open Platform. */
+    @Column(name = "categoria_shopee_id")
+    private String categoriaShopeeId;
+
+    @Column(name = "peso_shopee_kg", precision = 10, scale = 3)
+    private BigDecimal pesoShopeeKg;
+
     /**
      * Atributos dinamicos informados para a publicacao no Mercado Livre.
      * A estrutura e generica porque os atributos variam conforme a categoria.

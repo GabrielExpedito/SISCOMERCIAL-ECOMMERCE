@@ -98,6 +98,8 @@ public class MarketplaceOrchestratorService {
             case "under_review" -> StatusPublicacaoMarketplace.EM_ANALISE;
             case "not_yet_active" -> StatusPublicacaoMarketplace.AGUARDANDO_ATIVACAO;
             case "inactive" -> StatusPublicacaoMarketplace.INATIVA;
+            case "normal", "listed", "active_listing", "published"-> StatusPublicacaoMarketplace.PUBLICADA;
+            case "unlist", "unlisted", "deleted", "hidden" -> StatusPublicacaoMarketplace.ENCERRADA;
             default -> StatusPublicacaoMarketplace.ERRO;
         };
     }

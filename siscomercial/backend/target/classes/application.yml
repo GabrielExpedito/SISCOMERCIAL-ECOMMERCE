@@ -51,6 +51,19 @@ siscomercial:
     client-secret: ${MERCADO_LIVRE_CLIENT_SECRET:}
     redirect-uri: ${MERCADO_LIVRE_REDIRECT_URI:}
 
+  meta:
+    access-token: ${META_ACCESS_TOKEN:}
+    graph-api-version: ${META_GRAPH_API_VERSION:v24.0}
+
+  catalogo:
+    public-base-url: ${CATALOGO_PUBLIC_BASE_URL:${UPLOAD_PUBLIC_BASE_URL:http://localhost:8080}}
+
+  shopee:
+    partner-id: ${SHOPEE_PARTNER_ID:}
+    partner-key: ${SHOPEE_PARTNER_KEY:}
+    redirect-uri: ${SHOPEE_REDIRECT_URI:}
+    logistic-id: ${SHOPEE_LOGISTIC_ID:0}
+
   ia:
     gemini-api-key: ${GEMINI_API_KEY:}
     modelo: gemini-3.5-flash-lite

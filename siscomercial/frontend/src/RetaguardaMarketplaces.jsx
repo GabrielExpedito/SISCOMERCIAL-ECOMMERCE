@@ -38,6 +38,7 @@ export default function RetaguardaMarketplaces() {
   const [modalNova, setModalNova] = useState(false);
   const [lojaProprietaria, setLojaProprietaria] = useState("Minha loja");
   const [identificadorExterno, setIdentificadorExterno] = useState("");
+  const [marketplaceNovo, setMarketplaceNovo] = useState("MERCADO_LIVRE");
   const [processando, setProcessando] = useState(false);
   const [sincronizandoPedidos, setSincronizandoPedidos] = useState(false);
   const [integracaoSelecionada, setIntegracaoSelecionada] = useState(null);
@@ -189,7 +190,14 @@ export default function RetaguardaMarketplaces() {
       : produto.precoVenda;
     const problemas = [];
 
-    if (!produto.categoriaMercadoLivreId || !/^MLB\d+$/.test(produto.categoriaMercadoLivreId)) {
+    if (integracaoSelecionada?.marketplace === "SHOPEE") {
+      if (!produto.categoriaShopeeId || !/^\d+$/.test(String(produto.categoriaShopeeId))) {
+        problemas.push("Informe uma categoria Shopee numérica para o produto");
+      }
+      if (!(Number(produto.pesoShopeeKg) > 0)) {
+        problemas.push("Informe o peso Shopee do produto em quilogramas");
+      }
+    } else if (!produto.categoriaMercadoLivreId || !/^MLB\d+$/.test(produto.categoriaMercadoLivreId)) {
       problemas.push("Selecione uma categoria Mercado Livre válida usando o preditor de categorias");
     }
     if (
@@ -206,20 +214,22 @@ export default function RetaguardaMarketplaces() {
       problemas.push("Sem imagem pública HTTP/HTTPS");
     }
 
-    if (carregandoAtributos) {
-      problemas.push("Aguardando validação dos atributos obrigatórios");
-    } else if (erroAtributos) {
-      problemas.push("Não foi possível validar os atributos obrigatórios da categoria");
-    } else {
-      const cadastrados = produto.atributosMercadoLivre || [];
-      atributosObrigatorios.forEach((atributo) => {
-        const cadastrado = cadastrados.find(
-          (item) => item.atributoId === atributo.id,
-        );
-        if (!cadastrado?.valueId && !cadastrado?.valueName?.trim()) {
-          problemas.push(`Preencha o atributo obrigatório: ${atributo.name}`);
-        }
-      });
+    if (integracaoSelecionada?.marketplace === "MERCADO_LIVRE") {
+      if (carregandoAtributos) {
+        problemas.push("Aguardando validação dos atributos obrigatórios");
+      } else if (erroAtributos) {
+        problemas.push("Não foi possível validar os atributos obrigatórios da categoria");
+      } else {
+        const cadastrados = produto.atributosMercadoLivre || [];
+        atributosObrigatorios.forEach((atributo) => {
+          const cadastrado = cadastrados.find(
+            (item) => item.atributoId === atributo.id,
+          );
+          if (!cadastrado?.valueId && !cadastrado?.valueName?.trim()) {
+            problemas.push(`Preencha o atributo obrigatório: ${atributo.name}`);
+          }
+        });
+      }
     }
 
     return problemas;
@@ -235,17 +245,25 @@ export default function RetaguardaMarketplaces() {
     limparFeedback();
     try {
       setProcessando(true);
-      const criada = await api.criarIntegracaoMercadoLivre({
+      const payload = {
         lojaProprietaria: lojaProprietaria.trim(),
         identificadorExterno: identificadorExterno.trim(),
-      });
+      };
+      const criada = marketplaceNovo === "SHOPEE"
+        ? await api.criarIntegracaoShopee(payload)
+        : marketplaceNovo === "META"
+          ? await api.criarIntegracaoMeta(payload)
+          : await api.criarIntegracaoMercadoLivre(payload);
       setModalNova(false);
       setLojaProprietaria("Minha loja");
       setIdentificadorExterno("");
+      setMarketplaceNovo("MERCADO_LIVRE");
       setIntegracoes((atual) => [...atual, criada]);
       setIntegracaoSelecionada(criada);
       setMensagem(
-        "Integração criada. Agora autorize o acesso à conta do Mercado Livre.",
+        marketplaceNovo === "META"
+          ? "Integração Meta criada. Execute o diagnóstico para validar o catálogo e as permissões."
+          : `Integração ${marketplaceNovo === "SHOPEE" ? "Shopee" : "Mercado Livre"} criada. Agora autorize o acesso à conta.`,
       );
     } catch (e) {
       setErro(e.message);
@@ -258,10 +276,19 @@ export default function RetaguardaMarketplaces() {
     limparFeedback();
     try {
       setProcessando(true);
-      const resposta = await api.iniciarAutorizacaoMercadoLivre(integracao.id);
+      if (integracao.marketplace === "META") {
+        const atualizada = await api.diagnosticarMeta(integracao.id);
+        setIntegracoes((atual) => atual.map((item) => item.id === atualizada.id ? atualizada : item));
+        setIntegracaoSelecionada(atualizada);
+        setMensagem("Diagnóstico Meta concluído: catálogo e credencial acessíveis.");
+        return;
+      }
+      const resposta = integracao.marketplace === "SHOPEE"
+        ? await api.iniciarAutorizacaoShopee(integracao.id)
+        : await api.iniciarAutorizacaoMercadoLivre(integracao.id);
       const popup = window.open(
         resposta.urlAutorizacao,
-        "mercadoLivreOAuth",
+        integracao.marketplace === "SHOPEE" ? "shopeeOAuth" : "mercadoLivreOAuth",
         "width=900,height=760,resizable=yes,scrollbars=yes",
       );
       popupRef.current = popup;
@@ -275,7 +302,7 @@ export default function RetaguardaMarketplaces() {
 
       setIntegracaoSelecionada(integracao);
       setMensagem(
-        "A autorização foi aberta. Conclua o login e a autorização no Mercado Livre.",
+        `A autorização foi aberta. Conclua o login e a autorização no ${integracao.marketplace === "SHOPEE" ? "Shopee" : "Mercado Livre"}.`,
       );
       iniciarAcompanhamento(integracao.id);
     } catch (e) {
@@ -315,7 +342,11 @@ export default function RetaguardaMarketplaces() {
     limparFeedback();
     try {
       setProcessando(true);
-      const atualizada = await api.diagnosticarMarketplace(integracao.id);
+      const atualizada = integracao.marketplace === "SHOPEE"
+        ? await api.diagnosticarShopee(integracao.id)
+        : integracao.marketplace === "META"
+          ? await api.diagnosticarMeta(integracao.id)
+          : await api.diagnosticarMarketplace(integracao.id);
       setIntegracoes((atual) =>
         atual.map((item) => (item.id === atualizada.id ? atualizada : item)),
       );
@@ -522,7 +553,7 @@ export default function RetaguardaMarketplaces() {
             <div className="cabecalho-retaguarda">
               <h2>Testar conexão</h2>
               <p>
-                Gerencie as integrações e valide o acesso das contas do Mercado Livre.
+                Gerencie as integrações e valide o acesso das contas dos marketplaces.
               </p>
             </div>
             <button
@@ -533,7 +564,7 @@ export default function RetaguardaMarketplaces() {
                 setModalNova(true);
               }}
             >
-              + Conectar Mercado Livre
+              + Conectar marketplace
             </button>
           </div>
 
@@ -545,14 +576,14 @@ export default function RetaguardaMarketplaces() {
               <div className="marketplace-vazio-icone">◎</div>
               <h3>Nenhum marketplace conectado</h3>
               <p>
-                Crie a primeira integração e autorize uma conta do Mercado Livre.
+                Crie a primeira integração e autorize uma conta de marketplace.
               </p>
               <button
                 type="button"
                 className="botao-primario"
                 onClick={() => setModalNova(true)}
               >
-                Conectar Mercado Livre
+                Conectar marketplace
               </button>
             </div>
           ) : (
@@ -564,9 +595,9 @@ export default function RetaguardaMarketplaces() {
                 >
                   <div className="marketplace-card-cabecalho">
                     <div className="marketplace-identidade">
-                      <div className="marketplace-logo">ML</div>
+                      <div className="marketplace-logo">{integracao.marketplace === "SHOPEE" ? "SH" : integracao.marketplace === "META" ? "FB" : "ML"}</div>
                       <div>
-                        <span className="marketplace-tipo">MERCADO LIVRE</span>
+                        <span className="marketplace-tipo">{integracao.marketplace === "SHOPEE" ? "SHOPEE" : integracao.marketplace === "META" ? "META / FACEBOOK" : "MERCADO LIVRE"}</span>
                         <h3>{integracao.lojaProprietaria}</h3>
                         <small>{integracao.identificadorExterno}</small>
                       </div>
@@ -583,27 +614,27 @@ export default function RetaguardaMarketplaces() {
                   </div>
 
                   <div className="marketplace-acoes">
-                    {integracao.status !== "ATIVA" && (
+                    {integracao.status !== "ATIVA" && integracao.marketplace !== "META" && (
                       <button
                         type="button"
                         className="botao-secundario"
                         disabled={processando}
                         onClick={() => autorizar(integracao)}
                       >
-                        Autorizar Mercado Livre
+                        Autorizar {integracao.marketplace === "SHOPEE" ? "Shopee" : "Mercado Livre"}
                       </button>
                     )}
-                    {integracao.status === "ATIVA" && (
+                    {(integracao.status === "ATIVA" || integracao.marketplace === "META") && (
                       <button
                         type="button"
                         className="botao-secundario"
                         disabled={processando}
                         onClick={() => diagnosticar(integracao)}
                       >
-                        Testar conexão
+                        {integracao.marketplace === "META" && integracao.status !== "ATIVA" ? "Diagnosticar Meta" : "Testar conexão"}
                       </button>
                     )}
-                    {integracao.status === "ATIVA" && (
+                    {integracao.status === "ATIVA" && integracao.marketplace === "MERCADO_LIVRE" && (
                       <button
                         type="button"
                         className="botao-secundario"
@@ -636,7 +667,7 @@ export default function RetaguardaMarketplaces() {
           <div className="cabecalho-marketplace">
             <div className="cabecalho-retaguarda">
               <h2>Publicar produto</h2>
-              <p>Selecione a integração e o produto que será enviado ao Mercado Livre.</p>
+              <p>Selecione a integração e o produto que será enviado ao marketplace selecionado.</p>
             </div>
           </div>
 
@@ -694,7 +725,7 @@ export default function RetaguardaMarketplaces() {
                   disabled={!integracaoSelecionada || !produtoSelecionado || processando || problemasPreflight.length > 0}
                   onClick={publicar}
                 >
-                  {processando ? "Processando..." : "Publicar no Mercado Livre"}
+                  {processando ? "Processando..." : `Publicar no ${integracaoSelecionada?.marketplace === "SHOPEE" ? "Shopee" : "Mercado Livre"}`}
                 </button>
               </div>
 
@@ -711,12 +742,12 @@ export default function RetaguardaMarketplaces() {
                       <span>{problemas.length ? "Ajustes necessários" : "Dados mínimos preenchidos"}</span>
                     </div>
                     <div className="marketplace-preflight-dados">
-                      <span><b>Categoria:</b> {produto.categoriaMercadoLivreNome ? `${produto.categoriaMercadoLivreNome} — ID: ${produto.categoriaMercadoLivreId}` : produto.categoriaMercadoLivreId || "—"}</span>
+                      <span><b>Categoria:</b> {integracaoSelecionada?.marketplace === "SHOPEE" ? (produto.categoriaShopeeId || "—") : (produto.categoriaMercadoLivreNome ? `${produto.categoriaMercadoLivreNome} — ID: ${produto.categoriaMercadoLivreId}` : produto.categoriaMercadoLivreId || "—")}</span>
                       <span><b>Preço:</b> {Number(preco || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</span>
                       <span><b>Estoque disponível:</b> {Math.max(0, Number(produto.quantidadeEstoque || 0) - Number(produto.quantidadeReservada || 0))}</span>
                       <span><b>Imagens:</b> {imagens.length}</span>
                       <span><b>Descrição:</b> {produto.descricao ? "cadastrada" : "não cadastrada"}</span>
-                      <span><b>Atributos obrigatórios:</b> {carregandoAtributos ? "consultando..." : `${(produto.atributosMercadoLivre || []).filter((item) => atributosObrigatorios.some((atributo) => atributo.id === item.atributoId && (item.valueId || item.valueName?.trim()))).length}/${atributosObrigatorios.length} preenchidos`}</span>
+                      <span><b>Atributos obrigatórios:</b> {integracaoSelecionada?.marketplace === "SHOPEE" ? "Validação realizada pela Open Platform" : (carregandoAtributos ? "consultando..." : `${(produto.atributosMercadoLivre || []).filter((item) => atributosObrigatorios.some((atributo) => atributo.id === item.atributoId && (item.valueId || item.valueName?.trim()))).length}/${atributosObrigatorios.length} preenchidos`)}</span>
                     </div>
                     {problemas.length > 0 && <ul>{problemas.map((problema) => <li key={problema}>{problema}</li>)}</ul>}
                   </div>
@@ -741,7 +772,7 @@ export default function RetaguardaMarketplaces() {
           <div className="cabecalho-marketplace">
             <div className="cabecalho-retaguarda">
               <h2>Anúncios processados</h2>
-              <p>Consulte e gerencie os anúncios já processados nesta conta do Mercado Livre.</p>
+              <p>Consulte e gerencie os anúncios já processados nesta conta do marketplace.</p>
             </div>
             <div className="marketplace-anuncios-cabecalho-acoes">
               <button
@@ -761,7 +792,7 @@ export default function RetaguardaMarketplaces() {
           {integracoes.filter((item) => item.status === "ATIVA").length > 1 && (
             <div className="marketplace-filtro-integracao">
               <label className="campo-marketplace-label">
-                Conta Mercado Livre
+                Conta do marketplace
                 <select
                   value={integracaoSelecionada?.id || ""}
                   onChange={(e) => {
@@ -786,8 +817,8 @@ export default function RetaguardaMarketplaces() {
           ) : anuncios.length === 0 ? (
             <div className="marketplace-vazio marketplace-vazio-anuncios">
               <div className="marketplace-vazio-icone">↗</div>
-              <h3>Nenhum anúncio processado</h3>
-              <p>Quando um produto for publicado no Mercado Livre, ele aparecerá aqui para consulta.</p>
+              <h3>Nenhuma publicação processada</h3>
+              <p>Quando um produto for publicado em um marketplace, ele aparecerá aqui para consulta.</p>
             </div>
           ) : (
             <div className="marketplace-anuncios-lista">
@@ -879,13 +910,21 @@ export default function RetaguardaMarketplaces() {
             </button>
             <div className="detalhe-cabecalho">
               <span className="eyebrow">NOVA INTEGRAÇÃO</span>
-              <h2 id="nova-integracao">Conectar Mercado Livre</h2>
+              <h2 id="nova-integracao">Conectar marketplace</h2>
               <p>
                 Cadastre uma identificação local para a loja e, em seguida,
                 autorize a conta de teste.
               </p>
             </div>
             <form className="marketplace-form" onSubmit={criarIntegracao}>
+              <label>
+                Marketplace
+                <select value={marketplaceNovo} onChange={(e) => setMarketplaceNovo(e.target.value)}>
+                  <option value="MERCADO_LIVRE">Mercado Livre</option>
+                  <option value="SHOPEE">Shopee</option>
+                  <option value="META">Meta / Facebook</option>
+                </select>
+              </label>
               <label>
                 Loja proprietária
                 <input
@@ -901,14 +940,15 @@ export default function RetaguardaMarketplaces() {
                   required
                   value={identificadorExterno}
                   onChange={(e) => setIdentificadorExterno(e.target.value)}
-                  placeholder="TESTE_ML"
+                  placeholder={marketplaceNovo === "SHOPEE" ? "SHOP_ID" : marketplaceNovo === "META" ? "CATALOG_ID" : "TESTE_ML"}
                 />
               </label>
               <div className="marketplace-info-box">
                 <strong>Próxima etapa</strong>
                 <span>
-                  Após criar a integração, o Siscomercial abrirá a autorização
-                  OAuth do Mercado Livre em uma nova janela.
+                  {marketplaceNovo === "META"
+                    ? "Informe o ID do catálogo Meta. O token permanece somente no backend; após criar, execute o diagnóstico para validar acesso e elegibilidade."
+                    : "Após criar a integração, o Siscomercial abrirá a autorização OAuth do marketplace em uma nova janela."}
                 </span>
               </div>
               <div className="marketplace-modal-acoes">

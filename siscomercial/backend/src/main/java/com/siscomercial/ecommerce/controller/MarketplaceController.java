@@ -32,6 +32,36 @@ public class MarketplaceController {
         return resumo(integracaoService.criarMercadoLivre(request.lojaProprietaria(), request.identificadorExterno()));
     }
 
+    @PostMapping("/meta")
+    public IntegracaoResponse criarMeta(@RequestBody CriarIntegracaoRequest request) {
+        return resumo(integracaoService.criarMeta(request.lojaProprietaria(), request.identificadorExterno()));
+    }
+
+    @PostMapping("/{id}/meta/diagnostico")
+    public IntegracaoResponse diagnosticarMeta(@PathVariable Long id) {
+        return resumo(integracaoService.diagnosticarMeta(id));
+    }
+
+    @PostMapping("/shopee")
+    public IntegracaoResponse criarShopee(@RequestBody CriarIntegracaoRequest request) {
+        return resumo(integracaoService.criarShopee(request.lojaProprietaria(), request.identificadorExterno()));
+    }
+
+    @PostMapping("/{id}/shopee/autorizacao")
+    public UrlAutorizacaoResponse iniciarAutorizacaoShopee(@PathVariable Long id) {
+        return new UrlAutorizacaoResponse(integracaoService.iniciarAutorizacaoShopee(id));
+    }
+
+    @GetMapping("/shopee/callback")
+    public IntegracaoResponse callbackShopee(@RequestParam String code, @RequestParam("shop_id") String shopId, @RequestParam String state) {
+        return resumo(integracaoService.concluirAutorizacaoShopee(code, shopId, state));
+    }
+
+    @PostMapping("/{id}/shopee/diagnostico")
+    public IntegracaoResponse diagnosticarShopee(@PathVariable Long id) {
+        return resumo(integracaoService.diagnosticarShopee(id));
+    }
+
     @PostMapping("/{id}/mercado-livre/autorizacao")
     public UrlAutorizacaoResponse iniciarAutorizacao(@PathVariable Long id) {
         return new UrlAutorizacaoResponse(integracaoService.iniciarAutorizacaoMercadoLivre(id));
