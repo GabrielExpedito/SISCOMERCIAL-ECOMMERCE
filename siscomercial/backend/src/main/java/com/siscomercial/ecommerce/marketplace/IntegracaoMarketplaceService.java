@@ -35,8 +35,6 @@ public class IntegracaoMarketplaceService {
     @Value("${siscomercial.shopee.partner-id:}") private String shopeePartnerId;
     @Value("${siscomercial.shopee.partner-key:}") private String shopeePartnerKey;
     @Value("${siscomercial.shopee.redirect-uri:}") private String shopeeRedirectUri;
-    @Value("${siscomercial.meta.access-token:}") private String metaAccessToken;
-    @Value("${siscomercial.meta.graph-api-version:v24.0}") private String metaGraphApiVersion;
 
     @Transactional
     public IntegracaoMarketplace criarMercadoLivre(String lojaProprietaria, String identificadorExterno) {
@@ -100,53 +98,6 @@ public class IntegracaoMarketplaceService {
             return repository.save(integracao);
         } catch (RegraNegocioException e) { throw e;
         } catch (Exception e) { throw new RegraNegocioException("Falha ao concluir autorizacao Mercado Livre: " + e.getMessage()); }
-    }
-
-    @Transactional
-    public IntegracaoMarketplace criarMeta(String lojaProprietaria, String catalogoId) {
-        exigirConfiguracaoMeta();
-        if (lojaProprietaria == null || lojaProprietaria.isBlank() || catalogoId == null || catalogoId.isBlank()) {
-            throw new RegraNegocioException("Loja proprietaria e ID do catalogo Meta sao obrigatorios.");
-        }
-        IntegracaoMarketplace integracao = new IntegracaoMarketplace();
-        integracao.setLojaProprietaria(lojaProprietaria.trim());
-        integracao.setIdentificadorExterno(catalogoId.trim());
-        integracao.setMarketplace(Marketplace.META);
-        integracao.setTokenProtegido(credencialService.proteger(metaAccessToken));
-        integracao.setStatus(StatusIntegracaoMarketplace.CONFIGURADA);
-        return repository.save(integracao);
-    }
-
-    @Transactional
-    public IntegracaoMarketplace diagnosticarMeta(Long id) {
-        IntegracaoMarketplace integracao = buscarMeta(id);
-        try {
-            if (integracao.getTokenProtegido() == null || integracao.getTokenProtegido().isBlank()) {
-                throw new RegraNegocioException("A integracao Meta ainda nao possui credencial valida para diagnostico.");
-            }
-            String token = credencialService.revelar(integracao.getTokenProtegido());
-            HttpRequest request = HttpRequest.newBuilder(URI.create("https://graph.facebook.com/" + (metaGraphApiVersion.startsWith("v") ? metaGraphApiVersion : "v" + metaGraphApiVersion) + "/"
-                            + codificarPath(integracao.getIdentificadorExterno())
-                            + "?fields=id,name,product_count,vertical"))
-                    .header("Authorization", "Bearer " + token).GET().build();
-            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-            JsonNode json = objectMapper.readTree(response.body());
-            if (response.statusCode() < 200 || response.statusCode() >= 300 || json.has("error")) {
-                String mensagem = json.path("error").path("message").asText(json.path("message").asText("erro sem detalhes"));
-                throw new RegraNegocioException("A conta/catalogo Meta nao esta disponivel ou elegivel para esta integracao: " + mensagem);
-            }
-            integracao.setUltimaSincronizacao(LocalDateTime.now());
-            integracao.setStatus(StatusIntegracaoMarketplace.ATIVA);
-            return repository.save(integracao);
-        } catch (RegraNegocioException e) {
-            integracao.setStatus(StatusIntegracaoMarketplace.ERRO);
-            repository.save(integracao);
-            throw e;
-        } catch (Exception e) {
-            integracao.setStatus(StatusIntegracaoMarketplace.ERRO);
-            repository.save(integracao);
-            throw new RegraNegocioException("Falha ao diagnosticar a integracao Meta: " + e.getMessage());
-        }
     }
 
     @Transactional
@@ -294,22 +245,6 @@ public class IntegracaoMarketplaceService {
         } catch (RegraNegocioException e) { throw e;
         } catch (Exception e) { throw new RegraNegocioException("Falha ao consultar conta Mercado Livre: " + e.getMessage()); }
     }
-    private IntegracaoMarketplace buscarMeta(Long id) {
-        IntegracaoMarketplace i = buscar(id);
-        if (i.getMarketplace() != Marketplace.META) throw new RegraNegocioException("Esta operacao e exclusiva da Meta.");
-        return i;
-    }
-
-    private void exigirConfiguracaoMeta() {
-        if (metaAccessToken == null || metaAccessToken.isBlank()) {
-            throw new RegraNegocioException("Configure META_ACCESS_TOKEN no backend antes de criar a integracao Meta.");
-        }
-    }
-
-    private String codificarPath(String valor) {
-        return URLEncoder.encode(valor, StandardCharsets.UTF_8).replace("+", "%20");
-    }
-
     private IntegracaoMarketplace buscarShopee(Long id) {
         IntegracaoMarketplace i = buscar(id);
         if (i.getMarketplace() != Marketplace.SHOPEE) throw new RegraNegocioException("Esta operacao e exclusiva da Shopee.");

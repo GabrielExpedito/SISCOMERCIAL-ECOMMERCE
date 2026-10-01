@@ -124,4 +124,5 @@ class MarketplaceOrchestratorServiceTest {
         assertThrows(RegraNegocioException.class, () -> service.publicar(2L, 3L));
         verifyNoInteractions(produtoRepository, publicacaoRepository, historicoRepository);
     }
+
 }

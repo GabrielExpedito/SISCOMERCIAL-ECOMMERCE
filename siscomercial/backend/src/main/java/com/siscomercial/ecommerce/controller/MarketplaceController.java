@@ -32,16 +32,6 @@ public class MarketplaceController {
         return resumo(integracaoService.criarMercadoLivre(request.lojaProprietaria(), request.identificadorExterno()));
     }
 
-    @PostMapping("/meta")
-    public IntegracaoResponse criarMeta(@RequestBody CriarIntegracaoRequest request) {
-        return resumo(integracaoService.criarMeta(request.lojaProprietaria(), request.identificadorExterno()));
-    }
-
-    @PostMapping("/{id}/meta/diagnostico")
-    public IntegracaoResponse diagnosticarMeta(@PathVariable Long id) {
-        return resumo(integracaoService.diagnosticarMeta(id));
-    }
-
     @PostMapping("/shopee")
     public IntegracaoResponse criarShopee(@RequestBody CriarIntegracaoRequest request) {
         return resumo(integracaoService.criarShopee(request.lojaProprietaria(), request.identificadorExterno()));

@@ -51,12 +51,8 @@ siscomercial:
     client-secret: ${MERCADO_LIVRE_CLIENT_SECRET:}
     redirect-uri: ${MERCADO_LIVRE_REDIRECT_URI:}
 
-  meta:
-    access-token: ${META_ACCESS_TOKEN:}
-    graph-api-version: ${META_GRAPH_API_VERSION:v24.0}
-
   catalogo:
-    public-base-url: ${CATALOGO_PUBLIC_BASE_URL:${UPLOAD_PUBLIC_BASE_URL:http://localhost:8080}}
+    public-base-url: ${CATALOGO_PUBLIC_BASE_URL:${siscomercial.upload.public-base-url}}
 
   shopee:
     partner-id: ${SHOPEE_PARTNER_ID:}

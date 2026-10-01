@@ -76,9 +76,6 @@ public class Produto {
     @Column(name = "id_externo_mercado_livre")
     private String idExternoMercadoLivre;
 
-    @Column(name = "id_externo_facebook")
-    private String idExternoFacebook;
-
     @ElementCollection
     @CollectionTable(name = "produto_imagem", joinColumns = @JoinColumn(name = "produto_id"))
     @Column(name = "url")
