@@ -45,6 +45,11 @@ public class MarketplaceApplicationService {
     }
 
     @Transactional
+    public List<PublicacaoMarketplace> publicarProdutoMulticanal(Long produtoId) {
+        return marketplaceService.publicarMulticanal(produtoId);
+    }
+
+    @Transactional
     public PublicacaoMarketplace encerrarPublicacao(Long publicacaoId) {
         return marketplaceService.encerrar(publicacaoId);
     }

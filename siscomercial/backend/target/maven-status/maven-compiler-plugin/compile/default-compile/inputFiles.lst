@@ -7,6 +7,7 @@ C:\Users\Gabriel Expedito\Documents\siscomercial-ecommerce\SISCOMERCIAL-ECOMMERC
 C:\Users\Gabriel Expedito\Documents\siscomercial-ecommerce\SISCOMERCIAL-ECOMMERCE\siscomercial\backend\src\main\java\com\siscomercial\ecommerce\ai\OperacaoConfirmacaoService.java
 C:\Users\Gabriel Expedito\Documents\siscomercial-ecommerce\SISCOMERCIAL-ECOMMERCE\siscomercial\backend\src\main\java\com\siscomercial\ecommerce\ai\StubChatLanguageModel.java
 C:\Users\Gabriel Expedito\Documents\siscomercial-ecommerce\SISCOMERCIAL-ECOMMERCE\siscomercial\backend\src\main\java\com\siscomercial\ecommerce\application\MarketplaceApplicationService.java
+C:\Users\Gabriel Expedito\Documents\siscomercial-ecommerce\SISCOMERCIAL-ECOMMERCE\siscomercial\backend\src\main\java\com\siscomercial\ecommerce\config\AmazonProperties.java
 C:\Users\Gabriel Expedito\Documents\siscomercial-ecommerce\SISCOMERCIAL-ECOMMERCE\siscomercial\backend\src\main\java\com\siscomercial\ecommerce\config\CustomOAuth2UserService.java
 C:\Users\Gabriel Expedito\Documents\siscomercial-ecommerce\SISCOMERCIAL-ECOMMERCE\siscomercial\backend\src\main\java\com\siscomercial\ecommerce\config\PasswordConfig.java
 C:\Users\Gabriel Expedito\Documents\siscomercial-ecommerce\SISCOMERCIAL-ECOMMERCE\siscomercial\backend\src\main\java\com\siscomercial\ecommerce\config\SecurityConfig.java
@@ -23,6 +24,9 @@ C:\Users\Gabriel Expedito\Documents\siscomercial-ecommerce\SISCOMERCIAL-ECOMMERC
 C:\Users\Gabriel Expedito\Documents\siscomercial-ecommerce\SISCOMERCIAL-ECOMMERCE\siscomercial\backend\src\main\java\com\siscomercial\ecommerce\exception\GlobalExceptionHandler.java
 C:\Users\Gabriel Expedito\Documents\siscomercial-ecommerce\SISCOMERCIAL-ECOMMERCE\siscomercial\backend\src\main\java\com\siscomercial\ecommerce\exception\RecursoNaoEncontradoException.java
 C:\Users\Gabriel Expedito\Documents\siscomercial-ecommerce\SISCOMERCIAL-ECOMMERCE\siscomercial\backend\src\main\java\com\siscomercial\ecommerce\exception\RegraNegocioException.java
+C:\Users\Gabriel Expedito\Documents\siscomercial-ecommerce\SISCOMERCIAL-ECOMMERCE\siscomercial\backend\src\main\java\com\siscomercial\ecommerce\marketplace\AmazonApiClient.java
+C:\Users\Gabriel Expedito\Documents\siscomercial-ecommerce\SISCOMERCIAL-ECOMMERCE\siscomercial\backend\src\main\java\com\siscomercial\ecommerce\marketplace\AmazonAuthenticationService.java
+C:\Users\Gabriel Expedito\Documents\siscomercial-ecommerce\SISCOMERCIAL-ECOMMERCE\siscomercial\backend\src\main\java\com\siscomercial\ecommerce\marketplace\AmazonMarketplaceGateway.java
 C:\Users\Gabriel Expedito\Documents\siscomercial-ecommerce\SISCOMERCIAL-ECOMMERCE\siscomercial\backend\src\main\java\com\siscomercial\ecommerce\marketplace\CredencialMarketplaceService.java
 C:\Users\Gabriel Expedito\Documents\siscomercial-ecommerce\SISCOMERCIAL-ECOMMERCE\siscomercial\backend\src\main\java\com\siscomercial\ecommerce\marketplace\IntegracaoMarketplaceService.java
 C:\Users\Gabriel Expedito\Documents\siscomercial-ecommerce\SISCOMERCIAL-ECOMMERCE\siscomercial\backend\src\main\java\com\siscomercial\ecommerce\marketplace\MarketplaceGateway.java

@@ -1110,6 +1110,13 @@ button {
 .marketplace-acoes button:disabled { opacity: .55; cursor: not-allowed; }
 .marketplace-publicacao { margin-top: 20px; }
 .publicacao-grid { display: grid; grid-template-columns: 1fr 1.5fr auto; gap: 12px; align-items: end; margin-top: 18px; }
+.acoes-publicacao-central { display: flex; flex-wrap: wrap; gap: 8px; }
+.resultado-multicanal { display: grid; gap: 8px; margin-top: 14px; padding: 13px; border: 1px solid #e7eaf1; border-radius: 10px; background: #fafbfe; font-size: 11px; }
+.resultado-multicanal ul { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.resultado-multicanal li { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; padding: 9px; border-radius: 8px; background: #fff; }
+.resultado-multicanal li.sucesso { border: 1px solid #cfe8d9; }
+.resultado-multicanal li.falha { border: 1px solid #f2d4d8; }
+.resultado-multicanal li a { color: #4338a8; font-weight: 800; }
 .campo-marketplace-label { display: flex; flex-direction: column; gap: 6px; color: #718096; font-size: 11px; font-weight: 800; }
 .campo-marketplace-label select, .marketplace-form input { width: 100%; border: 1px solid #dfe3ee; border-radius: 9px; padding: 10px; color: #283247; background: #fff; font-size: 12px; outline: 0; }
 .campo-marketplace-label select:focus, .marketplace-form input:focus { border-color: #aaa5f4; box-shadow: 0 0 0 3px #f0efff; }

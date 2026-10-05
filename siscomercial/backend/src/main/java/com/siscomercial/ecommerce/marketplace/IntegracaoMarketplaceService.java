@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.siscomercial.ecommerce.exception.RegraNegocioException;
 import com.siscomercial.ecommerce.exception.RecursoNaoEncontradoException;
+import com.siscomercial.ecommerce.config.AmazonProperties;
 import com.siscomercial.ecommerce.model.*;
 import com.siscomercial.ecommerce.repository.IntegracaoMarketplaceRepository;
 import lombok.RequiredArgsConstructor;
@@ -26,6 +27,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class IntegracaoMarketplaceService {
     private final IntegracaoMarketplaceRepository repository;
+    private final AmazonProperties amazonProperties;
     private final CredencialMarketplaceService credencialService;
     private final ObjectMapper objectMapper;
     private final HttpClient httpClient = HttpClient.newBuilder().build();
@@ -111,6 +113,23 @@ public class IntegracaoMarketplaceService {
         integracao.setIdentificadorExterno(shopId.trim());
         integracao.setMarketplace(Marketplace.SHOPEE);
         integracao.setStatus(StatusIntegracaoMarketplace.CONFIGURADA);
+        return repository.save(integracao);
+    }
+
+    @Transactional
+    public IntegracaoMarketplace criarAmazon(String lojaProprietaria) {
+        if (!amazonProperties.hasLwaCredentials() || amazonProperties.getSellerId().isBlank()
+                || amazonProperties.getMarketplaceId().isBlank()) {
+            throw new RegraNegocioException("Configure as credenciais LWA, AMAZON_SELLER_ID e AMAZON_MARKETPLACE_ID no backend.");
+        }
+        if (lojaProprietaria == null || lojaProprietaria.isBlank()) {
+            throw new RegraNegocioException("Informe o nome da loja Amazon.");
+        }
+        IntegracaoMarketplace integracao = new IntegracaoMarketplace();
+        integracao.setLojaProprietaria(lojaProprietaria.trim());
+        integracao.setIdentificadorExterno(amazonProperties.getSellerId());
+        integracao.setMarketplace(Marketplace.AMAZON);
+        integracao.setStatus(StatusIntegracaoMarketplace.ATIVA);
         return repository.save(integracao);
     }
 

@@ -76,6 +76,10 @@ public class Produto {
     @Column(name = "id_externo_mercado_livre")
     private String idExternoMercadoLivre;
 
+    /** ASIN de um item já existente no catálogo Amazon, necessário para listing de oferta. */
+    @Column(name = "asin_amazon", length = 10)
+    private String asinAmazon;
+
     @ElementCollection
     @CollectionTable(name = "produto_imagem", joinColumns = @JoinColumn(name = "produto_id"))
     @Column(name = "url")

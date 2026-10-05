@@ -72,6 +72,12 @@ export const api = {
       body: JSON.stringify(payload),
     }),
 
+  criarIntegracaoAmazon: (payload) =>
+    request("/retaguarda/marketplaces/amazon", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+
   iniciarAutorizacaoShopee: (id) =>
     request(`/retaguarda/marketplaces/${id}/shopee/autorizacao`, {
       method: "POST",
@@ -167,6 +173,12 @@ export const api = {
     request("/retaguarda/marketplaces/publicacoes", {
       method: "POST",
       body: JSON.stringify({ integracaoId, produtoId }),
+    }),
+
+  publicarProdutosMulticanal: (produtoId) =>
+    request("/retaguarda/marketplaces/publicacoes/multicanal", {
+      method: "POST",
+      body: JSON.stringify({ produtoId }),
     }),
 
   encerrarPublicacaoMarketplace: (publicacaoId) =>

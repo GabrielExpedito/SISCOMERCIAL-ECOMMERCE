@@ -37,6 +37,11 @@ public class MarketplaceController {
         return resumo(integracaoService.criarShopee(request.lojaProprietaria(), request.identificadorExterno()));
     }
 
+    @PostMapping("/amazon")
+    public IntegracaoResponse criarAmazon(@RequestBody CriarIntegracaoRequest request) {
+        return resumo(integracaoService.criarAmazon(request.lojaProprietaria()));
+    }
+
     @PostMapping("/{id}/shopee/autorizacao")
     public UrlAutorizacaoResponse iniciarAutorizacaoShopee(@PathVariable Long id) {
         return new UrlAutorizacaoResponse(integracaoService.iniciarAutorizacaoShopee(id));
@@ -98,6 +103,14 @@ public class MarketplaceController {
     @PostMapping("/publicacoes")
     public PublicacaoResponse publicar(@RequestBody PublicarProdutoRequest request) {
         return publicacao(applicationService.publicarProduto(request.integracaoId(), request.produtoId()));
+    }
+
+    @PostMapping("/publicacoes/multicanal")
+    public List<PublicacaoResponse> publicarMulticanal(@RequestBody PublicarProdutoMulticanalRequest request) {
+        return applicationService.publicarProdutoMulticanal(request.produtoId())
+                .stream()
+                .map(this::publicacao)
+                .toList();
     }
 
     /**
@@ -162,6 +175,7 @@ public class MarketplaceController {
                 p.getId(),
                 p.getProduto().getId(),
                 p.getIntegracao().getId(),
+                p.getIntegracao().getMarketplace(),
                 p.getIdentificadorExterno(),
                 p.getUrlPublicacao(),
                 p.getStatus(),

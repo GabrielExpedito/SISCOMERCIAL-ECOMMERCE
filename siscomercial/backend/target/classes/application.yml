@@ -60,6 +60,16 @@ siscomercial:
     redirect-uri: ${SHOPEE_REDIRECT_URI:}
     logistic-id: ${SHOPEE_LOGISTIC_ID:0}
 
+  amazon:
+    client-id: ${AMAZON_LWA_CLIENT_ID:}
+    client-secret: ${AMAZON_LWA_CLIENT_SECRET:}
+    refresh-token: ${AMAZON_LWA_REFRESH_TOKEN:}
+    seller-id: ${AMAZON_SELLER_ID:}
+    marketplace-id: ${AMAZON_MARKETPLACE_ID:}
+    base-url: ${AMAZON_SP_API_BASE_URL:https://sellingpartnerapi-na.amazon.com}
+    lwa-token-url: ${AMAZON_LWA_TOKEN_URL:https://api.amazon.com/auth/o2/token}
+    user-agent: ${AMAZON_SP_API_USER_AGENT:SisComercial/0.1.0 (Language=Java/17)}
+
   ia:
     gemini-api-key: ${GEMINI_API_KEY:}
     modelo: gemini-3.5-flash-lite

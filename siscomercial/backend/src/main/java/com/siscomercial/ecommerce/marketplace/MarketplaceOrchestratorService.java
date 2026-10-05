@@ -8,6 +8,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -99,6 +101,7 @@ public class MarketplaceOrchestratorService {
             case "not_yet_active" -> StatusPublicacaoMarketplace.AGUARDANDO_ATIVACAO;
             case "inactive" -> StatusPublicacaoMarketplace.INATIVA;
             case "normal", "listed", "active_listing", "published"-> StatusPublicacaoMarketplace.PUBLICADA;
+            case "accepted", "processing" -> StatusPublicacaoMarketplace.EM_ANALISE;
             case "unlist", "unlisted", "deleted", "hidden" -> StatusPublicacaoMarketplace.ENCERRADA;
             default -> StatusPublicacaoMarketplace.ERRO;
         };
@@ -181,16 +184,97 @@ public class MarketplaceOrchestratorService {
             publicacao.setIntegracao(integracao);
             publicacao.setIdentificadorExterno(resultado.identificadorExterno());
             publicacao.setUrlPublicacao(resultado.urlPublicacao());
-            publicacao.setStatus(StatusPublicacaoMarketplace.PUBLICADA);
+            publicacao.setStatus(mapearStatus(resultado.status()));
             publicacao.setQuantidadePublicada(produto.getQuantidadeDisponivel());
             publicacao.setUltimaSincronizacao(LocalDateTime.now());
             publicacao = publicacaoRepository.save(publicacao);
             registrarHistorico(integracao, "PUBLICAR_PRODUTO", resultado.identificadorExterno(), StatusHistoricoIntegracaoMarketplace.SUCESSO, null);
             return publicacao;
         } catch (RuntimeException ex) {
+            PublicacaoMarketplace falha = new PublicacaoMarketplace();
+            falha.setProduto(produto);
+            falha.setIntegracao(integracao);
+            falha.setStatus(StatusPublicacaoMarketplace.ERRO);
+            falha.setQuantidadePublicada(0);
+            falha.setUltimaSincronizacao(LocalDateTime.now());
+            falha.setUltimoErro(ex.getMessage());
+            falha = publicacaoRepository.save(falha);
             registrarHistorico(integracao, "PUBLICAR_PRODUTO", null, StatusHistoricoIntegracaoMarketplace.FALHA, ex.getMessage());
-            throw ex;
+            return falha;
         }
+    }
+
+    /** Publica em cada integração ativa e registra o resultado sem interromper os demais canais. */
+    @Transactional
+    public List<PublicacaoMarketplace> publicarMulticanal(Long produtoId) {
+        List<IntegracaoMarketplace> integracoesAtivas =
+                integracaoRepository.findByStatus(StatusIntegracaoMarketplace.ATIVA);
+        if (integracoesAtivas.isEmpty()) return List.of();
+
+        Produto produto = produtoRepository.findById(produtoId)
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Produto nao encontrado: id " + produtoId));
+        List<PublicacaoMarketplace> resultados = new ArrayList<>();
+        for (IntegracaoMarketplace integracao : integracoesAtivas) {
+            resultados.add(publicarEmIntegracao(integracao, produto));
+        }
+        return resultados;
+    }
+
+    private PublicacaoMarketplace publicarEmIntegracao(IntegracaoMarketplace integracao, Produto produto) {
+        List<StatusPublicacaoMarketplace> statusBloqueadores = List.of(
+                StatusPublicacaoMarketplace.PENDENTE,
+                StatusPublicacaoMarketplace.PUBLICADA,
+                StatusPublicacaoMarketplace.PAUSADA,
+                StatusPublicacaoMarketplace.EM_ANALISE,
+                StatusPublicacaoMarketplace.AGUARDANDO_ATIVACAO,
+                StatusPublicacaoMarketplace.INATIVA,
+                StatusPublicacaoMarketplace.ERRO
+        );
+        if (publicacaoRepository.existsByProdutoIdAndIntegracaoIdAndStatusIn(
+                produto.getId(), integracao.getId(), statusBloqueadores)) {
+            return publicacaoRepository.findByProdutoIdAndIntegracaoId(produto.getId(), integracao.getId())
+                    .orElseThrow(() -> new RegraNegocioException(
+                            "Ja existe uma publicacao em processamento nesta integracao."));
+        }
+
+        MarketplaceGateway gateway = gateways.get(integracao.getMarketplace());
+        MarketplaceGateway.ResultadoPublicacao resultado;
+        try {
+            if (gateway == null) {
+                throw new RegraNegocioException("Marketplace ainda nao possui gateway configurado.");
+            }
+            resultado = gateway.publicar(integracao, produto);
+        } catch (RuntimeException ex) {
+            PublicacaoMarketplace falha = new PublicacaoMarketplace();
+            falha.setProduto(produto);
+            falha.setIntegracao(integracao);
+            falha.setStatus(StatusPublicacaoMarketplace.ERRO);
+            falha.setQuantidadePublicada(0);
+            falha.setUltimaSincronizacao(LocalDateTime.now());
+            falha.setUltimoErro(ex.getMessage());
+            falha = publicacaoRepository.save(falha);
+            registrarHistorico(integracao, "PUBLICAR_PRODUTO", null,
+                    StatusHistoricoIntegracaoMarketplace.FALHA, ex.getMessage());
+            return falha;
+        }
+
+        PublicacaoMarketplace publicacao = criarPublicacao(integracao, produto, resultado);
+        registrarHistorico(integracao, "PUBLICAR_PRODUTO", resultado.identificadorExterno(),
+                StatusHistoricoIntegracaoMarketplace.SUCESSO, null);
+        return publicacao;
+    }
+
+    private PublicacaoMarketplace criarPublicacao(IntegracaoMarketplace integracao, Produto produto,
+                                                  MarketplaceGateway.ResultadoPublicacao resultado) {
+        PublicacaoMarketplace publicacao = new PublicacaoMarketplace();
+        publicacao.setProduto(produto);
+        publicacao.setIntegracao(integracao);
+        publicacao.setIdentificadorExterno(resultado.identificadorExterno());
+        publicacao.setUrlPublicacao(resultado.urlPublicacao());
+        publicacao.setStatus(mapearStatus(resultado.status()));
+        publicacao.setQuantidadePublicada(produto.getQuantidadeDisponivel());
+        publicacao.setUltimaSincronizacao(LocalDateTime.now());
+        return publicacaoRepository.save(publicacao);
     }
 
     private void registrarHistorico(IntegracaoMarketplace integracao, String operacao, String referencia,

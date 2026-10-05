@@ -42,7 +42,6 @@ com\siscomercial\ecommerce\repository\MovimentacaoEstoqueRepository.class
 com\siscomercial\ecommerce\marketplace\MarketplaceGateway$ResultadoOperacao.class
 com\siscomercial\ecommerce\controller\ClienteController$CadastroClienteRequest.class
 com\siscomercial\ecommerce\config\PasswordConfig.class
-com\siscomercial\ecommerce\model\StatusPedido$1.class
 com\siscomercial\ecommerce\repository\HistoricoPrecoRepository.class
 com\siscomercial\ecommerce\model\Produto.class
 com\siscomercial\ecommerce\controller\ProdutoController.class

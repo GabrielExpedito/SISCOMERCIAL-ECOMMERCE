@@ -10,6 +10,7 @@ const vazio = {
   categoria: "",
   categoriaMercadoLivreId: "",
   categoriaMercadoLivreNome: "",
+  asinAmazon: "",
   quantidadeEstoque: 0,
   quantidadeReservada: 0,
   status: "ATIVO",
@@ -128,6 +129,7 @@ function ProdutoForm({ produto, onSalvo, onCancelar }) {
         categoria: form.categoria || null,
         categoriaMercadoLivreId: form.categoriaMercadoLivreId || null,
         categoriaMercadoLivreNome: form.categoriaMercadoLivreNome || null,
+        asinAmazon: form.asinAmazon?.trim() || null,
         quantidadeEstoque: Number(form.quantidadeEstoque || 0),
         quantidadeReservada: Number(form.quantidadeReservada || 0),
         status: form.status || "ATIVO",
@@ -301,6 +303,10 @@ function ProdutoForm({ produto, onSalvo, onCancelar }) {
           <div className="produto-editor-campo">
             <label>Nome</label>
             <input value={form.nome} onChange={(e) => editar("nome", e.target.value)} />
+          </div>
+          <div className="produto-editor-campo">
+            <label>ASIN Amazon (produto já existente no catálogo)</label>
+            <input maxLength={10} value={form.asinAmazon || ""} onChange={(e) => editar("asinAmazon", e.target.value.toUpperCase())} />
           </div>
           <div className="produto-editor-campo">
             <label>Preço de venda</label>

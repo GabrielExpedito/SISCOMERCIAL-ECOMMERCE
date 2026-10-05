@@ -67,6 +67,7 @@ public class ProdutoService {
         existente.setCategoria(dadosNovos.getCategoria());
         existente.setCategoriaMercadoLivreId(dadosNovos.getCategoriaMercadoLivreId());
         existente.setCategoriaMercadoLivreNome(dadosNovos.getCategoriaMercadoLivreNome());
+        existente.setAsinAmazon(dadosNovos.getAsinAmazon());
         existente.setAtributosMercadoLivre(dadosNovos.getAtributosMercadoLivre() == null
                 ? new java.util.ArrayList<>()
                 : new java.util.ArrayList<>(dadosNovos.getAtributosMercadoLivre()));

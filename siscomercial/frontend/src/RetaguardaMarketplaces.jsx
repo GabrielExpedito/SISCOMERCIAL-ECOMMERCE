@@ -21,12 +21,14 @@ const statusClass = (status) =>
 const labelBotaoPublicacao = (marketplace) => {
   if (marketplace === "MERCADO_LIVRE") return "Publicar no Mercado Livre";
   if (marketplace === "SHOPEE") return "Publicar na Shopee";
+  if (marketplace === "AMAZON") return "Publicar na Amazon";
   return "Publicar produto";
 };
 
 const nomeMarketplace = (marketplace) => {
   if (marketplace === "MERCADO_LIVRE") return "Mercado Livre";
   if (marketplace === "SHOPEE") return "Shopee";
+  if (marketplace === "AMAZON") return "Amazon";
   return marketplace || "Marketplace";
 };
 
@@ -47,6 +49,7 @@ export default function RetaguardaMarketplaces() {
   const [erro, setErro] = useState("");
   const [mensagem, setMensagem] = useState("");
   const [ultimaPublicacao, setUltimaPublicacao] = useState(null);
+  const [resultadoMulticanal, setResultadoMulticanal] = useState(null);
   const [modalNova, setModalNova] = useState(false);
   const [lojaProprietaria, setLojaProprietaria] = useState("Minha loja");
   const [identificadorExterno, setIdentificadorExterno] = useState("");
@@ -208,7 +211,9 @@ export default function RetaguardaMarketplaces() {
       : produto.precoVenda;
     const problemas = [];
 
-    if (integracaoSelecionada?.marketplace === "SHOPEE") {
+    if (integracaoSelecionada?.marketplace === "AMAZON") {
+      if (!/^[A-Za-z0-9]{10}$/.test(produto.asinAmazon || "")) problemas.push("Informe o ASIN de um produto existente no catálogo Amazon");
+    } else if (integracaoSelecionada?.marketplace === "SHOPEE") {
       if (!produto.categoriaShopeeId || !/^\d+$/.test(String(produto.categoriaShopeeId))) {
         problemas.push("Informe uma categoria Shopee numérica para o produto");
       }
@@ -231,7 +236,7 @@ export default function RetaguardaMarketplaces() {
       problemas.push("Sem estoque disponível");
     }
     if (!(Number(preco) > 0)) problemas.push("Preço inválido");
-    if (!imagens.some((url) => /^https?:\/\//i.test(String(url)))) {
+    if (integracaoSelecionada?.marketplace !== "AMAZON" && !imagens.some((url) => /^https?:\/\//i.test(String(url)))) {
       problemas.push("Sem imagem pública HTTP/HTTPS");
     }
 
@@ -270,16 +275,20 @@ export default function RetaguardaMarketplaces() {
         lojaProprietaria: lojaProprietaria.trim(),
         identificadorExterno: identificadorExterno.trim(),
       };
-      const criada = marketplaceNovo === "SHOPEE"
-        ? await api.criarIntegracaoShopee(payload)
-        : await api.criarIntegracaoMercadoLivre(payload);
+      const criada = marketplaceNovo === "AMAZON"
+        ? await api.criarIntegracaoAmazon(payload)
+        : marketplaceNovo === "SHOPEE"
+          ? await api.criarIntegracaoShopee(payload)
+          : await api.criarIntegracaoMercadoLivre(payload);
       setModalNova(false);
       setLojaProprietaria("Minha loja");
       setIdentificadorExterno("");
       setMarketplaceNovo("MERCADO_LIVRE");
       setIntegracoes((atual) => [...atual, criada]);
       setIntegracaoSelecionada(criada);
-      setMensagem(`Integração ${marketplaceNovo === "SHOPEE" ? "Shopee" : "Mercado Livre"} criada. Agora autorize o acesso à conta.`);
+      setMensagem(marketplaceNovo === "AMAZON"
+        ? "Integração Amazon criada usando a configuração segura do backend."
+        : `Integração ${marketplaceNovo === "SHOPEE" ? "Shopee" : "Mercado Livre"} criada. Agora autorize o acesso à conta.`);
     } catch (e) {
       setErro(e.message);
     } finally {
@@ -291,6 +300,7 @@ export default function RetaguardaMarketplaces() {
     limparFeedback();
     try {
       setProcessando(true);
+      if (integracao.marketplace === "AMAZON") return;
       const resposta = integracao.marketplace === "SHOPEE"
         ? await api.iniciarAutorizacaoShopee(integracao.id)
         : await api.iniciarAutorizacaoMercadoLivre(integracao.id);
@@ -462,6 +472,7 @@ export default function RetaguardaMarketplaces() {
     limparFeedback();
     try {
       setProcessando(true);
+      setResultadoMulticanal(null);
       const publicacao = await api.publicarProdutoMarketplace(
         integracaoSelecionada.id,
         Number(produtoSelecionado),
@@ -472,6 +483,24 @@ export default function RetaguardaMarketplaces() {
           ? `Produto publicado com sucesso. Identificador: ${publicacao.identificadorExterno || "—"}.`
           : `Publicação processada com status ${statusLabel(publicacao.status)}.`,
       );
+    } catch (e) {
+      setErro(e.message);
+    } finally {
+      setProcessando(false);
+    }
+  }
+
+  async function publicarMulticanal() {
+    if (!produtoSelecionado) return;
+    limparFeedback();
+    setUltimaPublicacao(null);
+    setResultadoMulticanal(null);
+    try {
+      setProcessando(true);
+      const resultado = await api.publicarProdutosMulticanal(Number(produtoSelecionado));
+      setResultadoMulticanal(resultado || []);
+      const sucessos = (resultado || []).filter((item) => item.status === "PUBLICADA").length;
+      setMensagem(`Publicação multicanal concluída: ${sucessos} de ${(resultado || []).length} canais publicados.`);
     } catch (e) {
       setErro(e.message);
     } finally {
@@ -602,9 +631,9 @@ export default function RetaguardaMarketplaces() {
                 >
                   <div className="marketplace-card-cabecalho">
                     <div className="marketplace-identidade">
-                      <div className="marketplace-logo">{integracao.marketplace === "SHOPEE" ? "SH" : "ML"}</div>
+                      <div className="marketplace-logo">{integracao.marketplace === "AMAZON" ? "AMZ" : integracao.marketplace === "SHOPEE" ? "SH" : "ML"}</div>
                       <div>
-                        <span className="marketplace-tipo">{integracao.marketplace === "SHOPEE" ? "SHOPEE" : "MERCADO LIVRE"}</span>
+                        <span className="marketplace-tipo">{nomeMarketplace(integracao.marketplace).toUpperCase()}</span>
                         <h3>{integracao.lojaProprietaria}</h3>
                         <small>{integracao.identificadorExterno}</small>
                       </div>
@@ -621,7 +650,7 @@ export default function RetaguardaMarketplaces() {
                   </div>
 
                   <div className="marketplace-acoes">
-                    {integracao.status !== "ATIVA" && (
+                    {integracao.status !== "ATIVA" && integracao.marketplace !== "AMAZON" && (
                       <button
                         type="button"
                         className="botao-secundario"
@@ -631,7 +660,7 @@ export default function RetaguardaMarketplaces() {
                         Autorizar {integracao.marketplace === "SHOPEE" ? "Shopee" : "Mercado Livre"}
                       </button>
                     )}
-                    {integracao.status === "ATIVA" && (
+                    {integracao.status === "ATIVA" && integracao.marketplace !== "AMAZON" && (
                       <button
                         type="button"
                         className="botao-secundario"
@@ -698,6 +727,7 @@ export default function RetaguardaMarketplaces() {
                       setIntegracaoSelecionada(selecionada || null);
                       setProdutoSelecionado("");
                       setUltimaPublicacao(null);
+                      setResultadoMulticanal(null);
                     }}
                   >
                     <option value="">Selecione uma integração...</option>
@@ -715,6 +745,7 @@ export default function RetaguardaMarketplaces() {
                     onChange={(e) => {
                       setProdutoSelecionado(e.target.value);
                       setUltimaPublicacao(null);
+                      setResultadoMulticanal(null);
                     }}
                     disabled={!integracaoSelecionada}
                   >
@@ -726,15 +757,47 @@ export default function RetaguardaMarketplaces() {
                     ))}
                   </select>
                 </label>
-                <button
-                  type="button"
-                  className="botao-primario"
-                  disabled={!integracaoSelecionada || !produtoSelecionado || processando || problemasPreflight.length > 0}
-                  onClick={publicar}
-                >
-                  {processando ? "Processando..." : labelBotaoPublicacao(integracaoSelecionada?.marketplace)}
-                </button>
+                <div className="acoes-publicacao-central">
+                  <button
+                    type="button"
+                    className="botao-primario"
+                    disabled={!integracaoSelecionada || !produtoSelecionado || processando || problemasPreflight.length > 0}
+                    onClick={publicar}
+                  >
+                    {processando ? "Processando..." : labelBotaoPublicacao(integracaoSelecionada?.marketplace)}
+                  </button>
+                  <button
+                    type="button"
+                    className="botao-secundario"
+                    disabled={!integracoes.some((item) => item.status === "ATIVA") || !produtoSelecionado || processando}
+                    onClick={publicarMulticanal}
+                  >
+                    Publicar nos marketplaces ativos
+                  </button>
+                </div>
               </div>
+
+              {resultadoMulticanal && (
+                <div className="resultado-multicanal" role="status" aria-live="polite">
+                  <strong>Resultado por marketplace</strong>
+                  {resultadoMulticanal.length === 0 ? (
+                    <p>Nenhuma integração ativa para publicar.</p>
+                  ) : (
+                    <ul>
+                      {resultadoMulticanal.map((item) => {
+                        const publicado = item.status === "PUBLICADA";
+                        return (
+                          <li key={item.integracaoId} className={publicado ? "sucesso" : "falha"}>
+                            <span><strong>{nomeMarketplace(item.marketplace)}</strong> — {publicado ? "Publicado" : `Falha: ${item.ultimoErro || statusLabel(item.status)}`}</span>
+                            {item.identificadorExterno && <small>ID: {item.identificadorExterno}</small>}
+                            {item.urlPublicacao && <a href={item.urlPublicacao} target="_blank" rel="noreferrer">Abrir publicação</a>}
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  )}
+                </div>
+              )}
 
               {produtoSelecionado && (() => {
                 const produto = produtos.find((item) => String(item.id) === String(produtoSelecionado));
@@ -955,6 +1018,7 @@ export default function RetaguardaMarketplaces() {
                 <select value={marketplaceNovo} onChange={(e) => setMarketplaceNovo(e.target.value)}>
                   <option value="MERCADO_LIVRE">Mercado Livre</option>
                   <option value="SHOPEE">Shopee</option>
+                  <option value="AMAZON">Amazon</option>
                 </select>
               </label>
               <label>
@@ -966,7 +1030,7 @@ export default function RetaguardaMarketplaces() {
                   placeholder="Minha loja"
                 />
               </label>
-              <label>
+              {marketplaceNovo !== "AMAZON" && <label>
                 Identificador externo
                 <input
                   required
@@ -974,11 +1038,13 @@ export default function RetaguardaMarketplaces() {
                   onChange={(e) => setIdentificadorExterno(e.target.value)}
                   placeholder={marketplaceNovo === "SHOPEE" ? "SHOP_ID" : "TESTE_ML"}
                 />
-              </label>
+              </label>}
               <div className="marketplace-info-box">
                 <strong>Próxima etapa</strong>
                 <span>
-                  Após criar a integração, o Siscomercial abrirá a autorização OAuth do marketplace em uma nova janela.
+                  {marketplaceNovo === "AMAZON"
+                    ? "A integração usará as credenciais configuradas no backend; informe também o ASIN Amazon no cadastro de cada produto."
+                    : "Após criar a integração, o Siscomercial abrirá a autorização OAuth do marketplace em uma nova janela."}
                 </span>
               </div>
               <div className="marketplace-modal-acoes">
