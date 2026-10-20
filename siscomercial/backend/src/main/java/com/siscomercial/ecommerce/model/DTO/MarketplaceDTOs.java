@@ -11,7 +11,15 @@ public final class MarketplaceDTOs {
     public record PublicarProdutoMulticanalRequest(Long produtoId) {}
     public record IntegracaoResponse(Long id, String lojaProprietaria, Marketplace marketplace,
                                      StatusIntegracaoMarketplace status, String identificadorExterno,
-                                     LocalDateTime tokenExpiraEm, LocalDateTime ultimaSincronizacao) {}
+                                     LocalDateTime tokenExpiraEm, LocalDateTime ultimaSincronizacao,
+                                     String diagnostico) {
+        public IntegracaoResponse(Long id, String lojaProprietaria, Marketplace marketplace,
+                                  StatusIntegracaoMarketplace status, String identificadorExterno,
+                                  LocalDateTime tokenExpiraEm, LocalDateTime ultimaSincronizacao) {
+            this(id, lojaProprietaria, marketplace, status, identificadorExterno,
+                    tokenExpiraEm, ultimaSincronizacao, null);
+        }
+    }
     public record UrlAutorizacaoResponse(String urlAutorizacao) {}
     public record SincronizacaoPedidosResponse(int consultados, int processados, int falhas, LocalDateTime sincronizadoEm) {}
     public record PublicacaoResponse(Long id, Long produtoId, Long integracaoId, Marketplace marketplace, String identificadorExterno,

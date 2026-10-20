@@ -77,7 +77,11 @@ public class MarketplaceController {
 
     @PostMapping("/{id}/diagnostico")
     public IntegracaoResponse diagnosticar(@PathVariable Long id) {
-        return resumo(integracaoService.diagnosticar(id));
+        IntegracaoMarketplace integracao = integracaoService.diagnosticar(id);
+        String diagnostico = integracao.getMarketplace() == com.siscomercial.ecommerce.model.Marketplace.AMAZON
+                ? "LWA_TOKEN_OK: token obtido; autorização da SP-API Listings e publicação não foram testadas."
+                : null;
+        return resumo(integracao, diagnostico);
     }
 
     /**
@@ -166,8 +170,12 @@ public class MarketplaceController {
     }
 
     private IntegracaoResponse resumo(IntegracaoMarketplace i) {
+        return resumo(i, null);
+    }
+
+    private IntegracaoResponse resumo(IntegracaoMarketplace i, String diagnostico) {
         return new IntegracaoResponse(i.getId(), i.getLojaProprietaria(), i.getMarketplace(), i.getStatus(),
-                i.getIdentificadorExterno(), i.getTokenExpiraEm(), i.getUltimaSincronizacao());
+                i.getIdentificadorExterno(), i.getTokenExpiraEm(), i.getUltimaSincronizacao(), diagnostico);
     }
 
     private PublicacaoResponse publicacao(PublicacaoMarketplace p) {

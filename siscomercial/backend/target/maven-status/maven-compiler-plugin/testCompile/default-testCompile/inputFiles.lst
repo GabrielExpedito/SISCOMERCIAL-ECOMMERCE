@@ -1,7 +1,11 @@
+C:\Users\Gabriel Expedito\Documents\siscomercial-ecommerce\SISCOMERCIAL-ECOMMERCE\siscomercial\backend\src\test\java\com\siscomercial\ecommerce\config\DatabaseCredentialsValidatorTest.java
 C:\Users\Gabriel Expedito\Documents\siscomercial-ecommerce\SISCOMERCIAL-ECOMMERCE\siscomercial\backend\src\test\java\com\siscomercial\ecommerce\controller\MarketplaceControllerTest.java
 C:\Users\Gabriel Expedito\Documents\siscomercial-ecommerce\SISCOMERCIAL-ECOMMERCE\siscomercial\backend\src\test\java\com\siscomercial\ecommerce\controller\RetaguardaPedidoControllerTest.java
+C:\Users\Gabriel Expedito\Documents\siscomercial-ecommerce\SISCOMERCIAL-ECOMMERCE\siscomercial\backend\src\test\java\com\siscomercial\ecommerce\marketplace\AmazonAuthenticationServiceSandboxIntegrationTest.java
 C:\Users\Gabriel Expedito\Documents\siscomercial-ecommerce\SISCOMERCIAL-ECOMMERCE\siscomercial\backend\src\test\java\com\siscomercial\ecommerce\marketplace\AmazonAuthenticationServiceTest.java
+C:\Users\Gabriel Expedito\Documents\siscomercial-ecommerce\SISCOMERCIAL-ECOMMERCE\siscomercial\backend\src\test\java\com\siscomercial\ecommerce\marketplace\AmazonDiagnosticSupportTest.java
 C:\Users\Gabriel Expedito\Documents\siscomercial-ecommerce\SISCOMERCIAL-ECOMMERCE\siscomercial\backend\src\test\java\com\siscomercial\ecommerce\marketplace\AmazonMarketplaceGatewayTest.java
+C:\Users\Gabriel Expedito\Documents\siscomercial-ecommerce\SISCOMERCIAL-ECOMMERCE\siscomercial\backend\src\test\java\com\siscomercial\ecommerce\marketplace\IntegracaoMarketplaceServiceTest.java
 C:\Users\Gabriel Expedito\Documents\siscomercial-ecommerce\SISCOMERCIAL-ECOMMERCE\siscomercial\backend\src\test\java\com\siscomercial\ecommerce\marketplace\MarketplaceOrchestratorServiceTest.java
 C:\Users\Gabriel Expedito\Documents\siscomercial-ecommerce\SISCOMERCIAL-ECOMMERCE\siscomercial\backend\src\test\java\com\siscomercial\ecommerce\marketplace\MarketplacePedidoSyncServiceTest.java
 C:\Users\Gabriel Expedito\Documents\siscomercial-ecommerce\SISCOMERCIAL-ECOMMERCE\siscomercial\backend\src\test\java\com\siscomercial\ecommerce\marketplace\ShopeeMarketplaceGatewayTest.java

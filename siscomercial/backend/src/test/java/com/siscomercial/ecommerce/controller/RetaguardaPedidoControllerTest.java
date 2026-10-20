@@ -141,7 +141,7 @@ class RetaguardaPedidoControllerTest {
 
     @Test
     @WithMockUser(roles = "ADMIN")
-    void deveRetornarErro400ParaTransicaoInvalida() throws Exception {
+    void deveRetornarErro422ParaTransicaoInvalida() throws Exception {
         when(pedidoService.alterarStatus(eq(1L), eq(StatusPedido.ENTREGUE), eq(OrigemAlteracaoStatusPedido.ADMINISTRADOR), any()))
                 .thenThrow(new RegraNegocioException("Transicao invalida para o pedido SIS-2026-000001: PAGAMENTO_APROVADO -> ENTREGUE."));
 

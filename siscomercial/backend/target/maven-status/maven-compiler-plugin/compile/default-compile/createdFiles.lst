@@ -1,4 +1,6 @@
+com\siscomercial\ecommerce\marketplace\AmazonApiClient.class
 com\siscomercial\ecommerce\model\FormaPagamento.class
+com\siscomercial\ecommerce\marketplace\AmazonAuthenticationService.class
 com\siscomercial\ecommerce\model\Pedido.class
 com\siscomercial\ecommerce\model\TipoMovimentacaoEstoque.class
 com\siscomercial\ecommerce\marketplace\MarketplaceOrderSyncOrchestratorService$ResultadoSincronizacao.class
@@ -39,9 +41,11 @@ com\siscomercial\ecommerce\model\MovimentacaoEstoque.class
 com\siscomercial\ecommerce\ai\OperacaoConfirmacaoService.class
 com\siscomercial\ecommerce\repository\ImportacaoPedidoMarketplaceRepository.class
 com\siscomercial\ecommerce\repository\MovimentacaoEstoqueRepository.class
+com\siscomercial\ecommerce\config\AmazonProperties.class
 com\siscomercial\ecommerce\marketplace\MarketplaceGateway$ResultadoOperacao.class
 com\siscomercial\ecommerce\controller\ClienteController$CadastroClienteRequest.class
 com\siscomercial\ecommerce\config\PasswordConfig.class
+com\siscomercial\ecommerce\model\StatusPedido$1.class
 com\siscomercial\ecommerce\repository\HistoricoPrecoRepository.class
 com\siscomercial\ecommerce\model\Produto.class
 com\siscomercial\ecommerce\controller\ProdutoController.class
@@ -49,6 +53,7 @@ com\siscomercial\ecommerce\service\NotaFiscalService$ResultadoEmissao.class
 com\siscomercial\ecommerce\controller\PedidoController$CheckoutRequest.class
 com\siscomercial\ecommerce\model\DTO\RetaguardaDTOs$EnderecoDTO.class
 com\siscomercial\ecommerce\model\StatusHistoricoIntegracaoMarketplace.class
+com\siscomercial\ecommerce\config\DatabaseCredentialsValidator.class
 com\siscomercial\ecommerce\marketplace\ShopeeMarketplaceGateway.class
 com\siscomercial\ecommerce\service\FreteService.class
 com\siscomercial\ecommerce\exception\RecursoNaoEncontradoException.class
@@ -72,6 +77,7 @@ com\siscomercial\ecommerce\model\DTO\MarketplaceDTOs$SincronizacaoPedidosRespons
 com\siscomercial\ecommerce\ai\ConfirmacaoPendente.class
 com\siscomercial\ecommerce\service\WhatsAppService.class
 com\siscomercial\ecommerce\ai\DadosCadastroProduto.class
+com\siscomercial\ecommerce\marketplace\AmazonDiagnosticSupport.class
 com\siscomercial\ecommerce\model\Endereco.class
 com\siscomercial\ecommerce\ai\AgenteAssistantFactory.class
 com\siscomercial\ecommerce\model\HistoricoPreco.class
@@ -84,6 +90,7 @@ com\siscomercial\ecommerce\model\Pagamento.class
 com\siscomercial\ecommerce\marketplace\MarketplaceGateway$ResultadoItemPedido.class
 com\siscomercial\ecommerce\model\DTO\UsuarioAtualResponse.class
 com\siscomercial\ecommerce\exception\RegraNegocioException.class
+com\siscomercial\ecommerce\marketplace\AmazonMarketplaceGateway.class
 com\siscomercial\ecommerce\service\FreteService$CotacaoFrete.class
 com\siscomercial\ecommerce\config\SecurityConfig.class
 com\siscomercial\ecommerce\controller\AgenteChatController$MensagemRequest.class
@@ -94,6 +101,7 @@ com\siscomercial\ecommerce\config\UploadResourceConfig.class
 com\siscomercial\ecommerce\model\StatusPublicacaoMarketplace.class
 com\siscomercial\ecommerce\service\ClienteService.class
 com\siscomercial\ecommerce\model\HistoricoIntegracaoMarketplace.class
+com\siscomercial\ecommerce\model\DTO\MarketplaceDTOs$PublicarProdutoMulticanalRequest.class
 com\siscomercial\ecommerce\model\PublicacaoMarketplace.class
 com\siscomercial\ecommerce\ai\AgenteIAAssistant.class
 com\siscomercial\ecommerce\marketplace\IntegracaoMarketplaceService.class

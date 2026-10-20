@@ -1,0 +1,13 @@
+# Local environment files and credentials
+.env
+.env.*
+!.env.example
+backend/.env
+backend/.env.*
+!backend/.env.example
+
+# Local Spring configuration files that may contain credentials
+**/application-secrets*.yml
+**/application-secrets*.yaml
+**/application-local-secrets*.yml
+**/application-local-secrets*.yaml

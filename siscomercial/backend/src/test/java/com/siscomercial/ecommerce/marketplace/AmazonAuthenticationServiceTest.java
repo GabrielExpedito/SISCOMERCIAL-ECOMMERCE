@@ -73,13 +73,18 @@ class AmazonAuthenticationServiceTest {
         @SuppressWarnings("unchecked")
         HttpResponse<String> unauthorized = mock(HttpResponse.class);
         when(unauthorized.statusCode()).thenReturn(401);
-        when(unauthorized.body()).thenReturn("client-secret-test refresh-token-test");
+        when(unauthorized.body()).thenReturn("{\"error\":\"invalid_grant\",\"error_description\":\"client-secret-test refresh-token-test\"}");
+        when(unauthorized.headers()).thenReturn(java.net.http.HttpHeaders.of(
+                java.util.Map.of("x-amzn-RequestId", java.util.List.of("lwa-request-123")), (k, v) -> true));
         when(client.postForm(anyString(), anyMap())).thenReturn(unauthorized);
 
         RegraNegocioException authError = assertThrows(RegraNegocioException.class,
                 () -> new AmazonAuthenticationService(properties, client, new ObjectMapper()).obterAccessToken());
         assertFalse(authError.getMessage().contains("client-secret-test"));
         assertFalse(authError.getMessage().contains("refresh-token-test"));
+        assertTrue(authError.getMessage().contains("LWA_AUTH"));
+        assertTrue(authError.getMessage().contains("invalid_grant"));
+        assertTrue(authError.getMessage().contains("Request ID: lwa-request-123"));
 
         when(unauthorized.statusCode()).thenReturn(200);
         when(unauthorized.body()).thenReturn("{\"error\":\"invalid_grant\"}");
@@ -96,6 +101,19 @@ class AmazonAuthenticationServiceTest {
 
         assertTrue(error.getMessage().contains("não configuradas"));
         verifyNoInteractions(client);
+    }
+
+    @Test
+    void falhaDeRedeLwaPreservaCausaOriginalSemExibirCredenciais() throws Exception {
+        AmazonApiClient client = mock(AmazonApiClient.class);
+        when(client.postForm(anyString(), anyMap())).thenThrow(new java.io.IOException("network unavailable"));
+
+        RegraNegocioException error = assertThrows(RegraNegocioException.class,
+                () -> new AmazonAuthenticationService(configurada(), client, new ObjectMapper()).obterAccessToken());
+
+        assertTrue(error.getMessage().contains("LWA_COMMUNICATION"));
+        assertInstanceOf(java.io.IOException.class, error.getCause());
+        assertFalse(error.getMessage().contains("network unavailable"));
     }
 
     private AmazonProperties configurada() {

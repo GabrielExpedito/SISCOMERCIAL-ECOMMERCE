@@ -285,6 +285,15 @@ export default function RetaguardaMarketplaces() {
       setIdentificadorExterno("");
       setMarketplaceNovo("MERCADO_LIVRE");
       setIntegracoes((atual) => [...atual, criada]);
+      setIntegracoes((atual) => {
+        const index = atual.findIndex((item) => item.id === criada.id);
+        if (index >= 0) {
+          const novaLista = [...atual];
+          novaLista[index] = criada;
+          return novaLista;
+        }
+        return [...atual, criada];
+      });
       setIntegracaoSelecionada(criada);
       setMensagem(marketplaceNovo === "AMAZON"
         ? "Integração Amazon criada usando a configuração segura do backend."
@@ -368,9 +377,9 @@ export default function RetaguardaMarketplaces() {
       );
       setIntegracaoSelecionada(atualizada);
       setMensagem(
-        atualizada.status === "ATIVA"
+        atualizada.diagnostico || (atualizada.status === "ATIVA"
           ? "Diagnóstico concluído: integração ativa e acessível."
-          : `Diagnóstico concluído: ${statusLabel(atualizada.status)}.`,
+          : `Diagnóstico concluído: ${statusLabel(atualizada.status)}.`),
       );
     } catch (e) {
       setErro(e.message);
@@ -660,7 +669,7 @@ export default function RetaguardaMarketplaces() {
                         Autorizar {integracao.marketplace === "SHOPEE" ? "Shopee" : "Mercado Livre"}
                       </button>
                     )}
-                    {integracao.status === "ATIVA" && integracao.marketplace !== "AMAZON" && (
+                    {integracao.status === "ATIVA" && (
                       <button
                         type="button"
                         className="botao-secundario"

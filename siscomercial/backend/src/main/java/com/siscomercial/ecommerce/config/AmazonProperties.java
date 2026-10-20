@@ -15,6 +15,7 @@ public class AmazonProperties {
     private String baseUrl = "https://sellingpartnerapi-na.amazon.com";
     private String lwaTokenUrl = "https://api.amazon.com/auth/o2/token";
     private String userAgent = "SisComercial/0.1.0 (Language=Java/17)";
+    private String tokenDiagnosticHmacKey = "";
 
     public String getClientId() { return clientId; }
     public void setClientId(String clientId) { this.clientId = clientId == null ? "" : clientId; }
@@ -32,6 +33,10 @@ public class AmazonProperties {
     public void setLwaTokenUrl(String lwaTokenUrl) { this.lwaTokenUrl = lwaTokenUrl == null ? "" : lwaTokenUrl; }
     public String getUserAgent() { return userAgent; }
     public void setUserAgent(String userAgent) { this.userAgent = userAgent == null ? "" : userAgent; }
+    public String getTokenDiagnosticHmacKey() { return tokenDiagnosticHmacKey; }
+    public void setTokenDiagnosticHmacKey(String tokenDiagnosticHmacKey) {
+        this.tokenDiagnosticHmacKey = tokenDiagnosticHmacKey == null ? "" : tokenDiagnosticHmacKey;
+    }
 
     public boolean hasLwaCredentials() {
         return !clientId.isBlank() && !clientSecret.isBlank() && !refreshToken.isBlank();

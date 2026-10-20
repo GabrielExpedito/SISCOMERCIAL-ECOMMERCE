@@ -28,6 +28,7 @@ import java.util.Map;
 public class IntegracaoMarketplaceService {
     private final IntegracaoMarketplaceRepository repository;
     private final AmazonProperties amazonProperties;
+    private final AmazonAuthenticationService amazonAuthenticationService;
     private final CredencialMarketplaceService credencialService;
     private final ObjectMapper objectMapper;
     private final HttpClient httpClient = HttpClient.newBuilder().build();
@@ -43,7 +44,14 @@ public class IntegracaoMarketplaceService {
         if (lojaProprietaria == null || lojaProprietaria.isBlank() || identificadorExterno == null || identificadorExterno.isBlank()) {
             throw new RegraNegocioException("Loja proprietaria e identificador externo sao obrigatorios.");
         }
-        IntegracaoMarketplace integracao = new IntegracaoMarketplace();
+        IntegracaoMarketplace integracao = repository.findByMarketplaceAndIdentificadorExterno(
+                Marketplace.MERCADO_LIVRE, identificadorExterno.trim())
+                .orElseGet(() -> {
+                    IntegracaoMarketplace nova = new IntegracaoMarketplace();
+                    nova.setMarketplace(Marketplace.MERCADO_LIVRE);
+                    nova.setIdentificadorExterno(identificadorExterno.trim());
+                    return nova;
+                });
         integracao.setLojaProprietaria(lojaProprietaria.trim());
         integracao.setIdentificadorExterno(identificadorExterno.trim());
         integracao.setMarketplace(Marketplace.MERCADO_LIVRE);
@@ -108,7 +116,14 @@ public class IntegracaoMarketplaceService {
         if (lojaProprietaria == null || lojaProprietaria.isBlank() || shopId == null || shopId.isBlank()) {
             throw new RegraNegocioException("Loja proprietaria e shop_id sao obrigatorios.");
         }
-        IntegracaoMarketplace integracao = new IntegracaoMarketplace();
+        IntegracaoMarketplace integracao = repository.findByMarketplaceAndIdentificadorExterno(
+                Marketplace.SHOPEE, shopId.trim())
+                .orElseGet(() -> {
+                    IntegracaoMarketplace nova = new IntegracaoMarketplace();
+                    nova.setMarketplace(Marketplace.SHOPEE);
+                    nova.setIdentificadorExterno(shopId.trim());
+                    return nova;
+                });
         integracao.setLojaProprietaria(lojaProprietaria.trim());
         integracao.setIdentificadorExterno(shopId.trim());
         integracao.setMarketplace(Marketplace.SHOPEE);
@@ -125,7 +140,16 @@ public class IntegracaoMarketplaceService {
         if (lojaProprietaria == null || lojaProprietaria.isBlank()) {
             throw new RegraNegocioException("Informe o nome da loja Amazon.");
         }
-        IntegracaoMarketplace integracao = new IntegracaoMarketplace();
+        // A integração só pode ser ativada quando as credenciais do servidor autenticam no LWA.
+        amazonAuthenticationService.obterAccessToken();
+        IntegracaoMarketplace integracao = repository.findByMarketplaceAndIdentificadorExterno(
+                Marketplace.AMAZON, amazonProperties.getSellerId())
+                .orElseGet(() -> {
+                    IntegracaoMarketplace nova = new IntegracaoMarketplace();
+                    nova.setMarketplace(Marketplace.AMAZON);
+                    nova.setIdentificadorExterno(amazonProperties.getSellerId());
+                    return nova;
+                });
         integracao.setLojaProprietaria(lojaProprietaria.trim());
         integracao.setIdentificadorExterno(amazonProperties.getSellerId());
         integracao.setMarketplace(Marketplace.AMAZON);
@@ -232,16 +256,41 @@ public class IntegracaoMarketplaceService {
     @Transactional
     public IntegracaoMarketplace alterarAtivacao(Long id, boolean ativa) {
         IntegracaoMarketplace integracao = buscar(id);
-        if (ativa && (integracao.getTokenProtegido() == null || integracao.getTokenProtegido().isBlank())) {
-            throw new RegraNegocioException("Conclua a autorizacao OAuth antes de ativar a integracao.");
+        if (ativa) {
+            validarElegibilidadeAtivacao(integracao);
         }
         integracao.setStatus(ativa ? StatusIntegracaoMarketplace.ATIVA : StatusIntegracaoMarketplace.INATIVA);
         return repository.save(integracao);
     }
 
+    private void validarElegibilidadeAtivacao(IntegracaoMarketplace integracao) {
+        if (integracao.getMarketplace() == Marketplace.AMAZON) {
+            if (!amazonProperties.hasLwaCredentials() || amazonProperties.getSellerId().isBlank()
+                    || amazonProperties.getMarketplaceId().isBlank()) {
+                throw new RegraNegocioException("Configure as credenciais LWA, AMAZON_SELLER_ID e AMAZON_MARKETPLACE_ID no backend antes de ativar a integracao.");
+            }
+            // Amazon usa refresh token LWA do servidor, não OAuth por integração/loja.
+            // Isto valida autenticação LWA, sem afirmar que SP-API foi testada.
+            amazonAuthenticationService.obterAccessToken();
+            return;
+        }
+        if (integracao.getTokenProtegido() == null || integracao.getTokenProtegido().isBlank()) {
+            throw new RegraNegocioException("Conclua a autorizacao OAuth antes de ativar a integracao.");
+        }
+    }
+
     @Transactional
     public IntegracaoMarketplace diagnosticar(Long id) {
         IntegracaoMarketplace integracao = buscar(id);
+        if (integracao.getMarketplace() == Marketplace.AMAZON) {
+            if (!amazonProperties.hasLwaCredentials() || amazonProperties.getSellerId().isBlank()
+                    || amazonProperties.getMarketplaceId().isBlank()) {
+                throw new RegraNegocioException("Configure as credenciais LWA, AMAZON_SELLER_ID e AMAZON_MARKETPLACE_ID no backend antes de testar a conexao.");
+            }
+            // Diagnóstico verifica somente LWA e mantém a operação somente de leitura.
+            amazonAuthenticationService.obterAccessToken();
+            return integracao;
+        }
         if (integracao.getMarketplace() != Marketplace.MERCADO_LIVRE || integracao.getTokenProtegido() == null) {
             throw new RegraNegocioException("A integracao ainda nao possui credencial valida para diagnostico.");
         }

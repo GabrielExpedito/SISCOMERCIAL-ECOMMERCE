@@ -11,9 +11,9 @@ spring:
       max-request-size: 10MB
 
   datasource:
-    url: jdbc:postgresql://localhost:5432/siscomercial
-    username: postgres
-    password: gjrv0907
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
 
   jpa:
@@ -69,6 +69,7 @@ siscomercial:
     base-url: ${AMAZON_SP_API_BASE_URL:https://sellingpartnerapi-na.amazon.com}
     lwa-token-url: ${AMAZON_LWA_TOKEN_URL:https://api.amazon.com/auth/o2/token}
     user-agent: ${AMAZON_SP_API_USER_AGENT:SisComercial/0.1.0 (Language=Java/17)}
+    token-diagnostic-hmac-key: ${AMAZON_TOKEN_DIAGNOSTIC_HMAC_KEY:}
 
   ia:
     gemini-api-key: ${GEMINI_API_KEY:}

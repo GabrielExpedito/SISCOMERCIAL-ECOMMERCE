@@ -175,9 +175,9 @@ export default function RetaguardaMarketplaces() {
       );
       setIntegracaoSelecionada(atualizada);
       setMensagem(
-        atualizada.status === "ATIVA"
+        atualizada.diagnostico || (atualizada.status === "ATIVA"
           ? "Diagnóstico concluído: integração ativa e acessível."
-          : `Diagnóstico concluído: ${statusLabel(atualizada.status)}.`,
+          : `Diagnóstico concluído: ${statusLabel(atualizada.status)}.`),
       );
     } catch (e) {
       setErro(e.message);
