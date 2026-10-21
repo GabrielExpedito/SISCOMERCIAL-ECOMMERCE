@@ -102,25 +102,6 @@ public class PedidoController {
     }
 
     /**
-     * Simula aprovacao do pagamento.
-     * Posteriormente sera substituido pelo webhook
-     * do gateway de pagamento.
-     */
-    @PostMapping("/{id}/confirmar-pagamento")
-    public Pedido confirmarPagamento(
-            @PathVariable Long id,
-            @RequestParam(
-                    defaultValue = "TXN-SIMULADA"
-            ) String transacaoId) {
-
-        return pedidoService
-                .confirmarPagamentoAprovado(
-                        id,
-                        transacaoId
-                );
-    }
-
-    /**
      * Cancela um pedido.
      */
     @PostMapping("/{id}/cancelar")

@@ -1,5 +1,7 @@
 C:\Users\Gabriel Expedito\Documents\siscomercial-ecommerce\SISCOMERCIAL-ECOMMERCE\siscomercial\backend\src\test\java\com\siscomercial\ecommerce\config\DatabaseCredentialsValidatorTest.java
+C:\Users\Gabriel Expedito\Documents\siscomercial-ecommerce\SISCOMERCIAL-ECOMMERCE\siscomercial\backend\src\test\java\com\siscomercial\ecommerce\controller\ClienteControllerTest.java
 C:\Users\Gabriel Expedito\Documents\siscomercial-ecommerce\SISCOMERCIAL-ECOMMERCE\siscomercial\backend\src\test\java\com\siscomercial\ecommerce\controller\MarketplaceControllerTest.java
+C:\Users\Gabriel Expedito\Documents\siscomercial-ecommerce\SISCOMERCIAL-ECOMMERCE\siscomercial\backend\src\test\java\com\siscomercial\ecommerce\controller\PedidoSecurityTest.java
 C:\Users\Gabriel Expedito\Documents\siscomercial-ecommerce\SISCOMERCIAL-ECOMMERCE\siscomercial\backend\src\test\java\com\siscomercial\ecommerce\controller\RetaguardaPedidoControllerTest.java
 C:\Users\Gabriel Expedito\Documents\siscomercial-ecommerce\SISCOMERCIAL-ECOMMERCE\siscomercial\backend\src\test\java\com\siscomercial\ecommerce\marketplace\AmazonAuthenticationServiceSandboxIntegrationTest.java
 C:\Users\Gabriel Expedito\Documents\siscomercial-ecommerce\SISCOMERCIAL-ECOMMERCE\siscomercial\backend\src\test\java\com\siscomercial\ecommerce\marketplace\AmazonAuthenticationServiceTest.java
@@ -12,4 +14,6 @@ C:\Users\Gabriel Expedito\Documents\siscomercial-ecommerce\SISCOMERCIAL-ECOMMERC
 C:\Users\Gabriel Expedito\Documents\siscomercial-ecommerce\SISCOMERCIAL-ECOMMERCE\siscomercial\backend\src\test\java\com\siscomercial\ecommerce\migration\PedidoMigrationsTest.java
 C:\Users\Gabriel Expedito\Documents\siscomercial-ecommerce\SISCOMERCIAL-ECOMMERCE\siscomercial\backend\src\test\java\com\siscomercial\ecommerce\model\PedidoJsonSerializationTest.java
 C:\Users\Gabriel Expedito\Documents\siscomercial-ecommerce\SISCOMERCIAL-ECOMMERCE\siscomercial\backend\src\test\java\com\siscomercial\ecommerce\model\StatusPedidoTest.java
+C:\Users\Gabriel Expedito\Documents\siscomercial-ecommerce\SISCOMERCIAL-ECOMMERCE\siscomercial\backend\src\test\java\com\siscomercial\ecommerce\service\ClienteCadastroPersistenceTest.java
+C:\Users\Gabriel Expedito\Documents\siscomercial-ecommerce\SISCOMERCIAL-ECOMMERCE\siscomercial\backend\src\test\java\com\siscomercial\ecommerce\service\ClienteServiceTest.java
 C:\Users\Gabriel Expedito\Documents\siscomercial-ecommerce\SISCOMERCIAL-ECOMMERCE\siscomercial\backend\src\test\java\com\siscomercial\ecommerce\service\PedidoServiceStatusTest.java

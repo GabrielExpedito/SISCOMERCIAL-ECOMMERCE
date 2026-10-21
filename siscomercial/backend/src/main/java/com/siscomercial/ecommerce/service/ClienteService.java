@@ -5,6 +5,7 @@ import com.siscomercial.ecommerce.exception.RegraNegocioException;
 import com.siscomercial.ecommerce.model.Cliente;
 import com.siscomercial.ecommerce.model.Endereco;
 import com.siscomercial.ecommerce.model.PerfilUsuario;
+import com.siscomercial.ecommerce.model.DTO.CadastroClienteRequest;
 import com.siscomercial.ecommerce.repository.ClienteRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -22,11 +23,24 @@ public class ClienteService {
     private final BCryptPasswordEncoder passwordEncoder;
 
     @Transactional
-    public Cliente cadastrar(Cliente cliente, String senhaPura) {
+    public Cliente cadastrar(CadastroClienteRequest request) {
+        if (request == null || request.cliente() == null) {
+            throw new RegraNegocioException("Informe os dados do cliente para cadastro.");
+        }
+        CadastroClienteRequest.DadosCadastroCliente dados = request.cliente();
+        Cliente cliente = new Cliente();
+        cliente.setNomeRazaoSocial(dados.nomeRazaoSocial());
+        cliente.setCpfCnpj(dados.cpfCnpj());
+        cliente.setEmail(dados.email());
+        cliente.setTelefone(dados.telefone());
+        cliente.setNomeFantasia(dados.nomeFantasia());
+        cliente.setInscricaoEstadual(dados.inscricaoEstadual());
+        // Identidade, status, autenticação e perfil são definidos pelo servidor.
+        cliente.setPerfil(PerfilUsuario.CLIENTE);
         if (clienteRepository.existsByEmail(cliente.getEmail())) {
             throw new RegraNegocioException("Ja existe um cliente cadastrado com este e-mail.");
         }
-        cliente.setSenhaHash(passwordEncoder.encode(senhaPura));
+        cliente.setSenhaHash(passwordEncoder.encode(request.senha()));
         return clienteRepository.save(cliente);
     }
 
@@ -61,33 +75,17 @@ public class ClienteService {
             String googleId,
             String email,
             String nome) {
-
-        System.out.println("=== CADASTRAR/BUSCAR GOOGLE ===");
-        System.out.println("Google ID: " + googleId);
-        System.out.println("Email: " + email);
-        System.out.println("Nome: " + nome);
-
         return clienteRepository.findByGoogleId(googleId)
                 .orElseGet(() -> {
-
-                    System.out.println("Google ID nao encontrado.");
-
                     Cliente clienteExistente = clienteRepository
                             .findByEmail(email)
                             .orElse(null);
 
                     if (clienteExistente != null) {
-
-                        System.out.println(
-                                "Cliente encontrado pelo email. Associando Google ID."
-                        );
-
                         clienteExistente.setGoogleId(googleId);
 
                         return clienteRepository.save(clienteExistente);
                     }
-
-                    System.out.println("Criando novo cliente.");
 
                     Cliente novoCliente = new Cliente();
 

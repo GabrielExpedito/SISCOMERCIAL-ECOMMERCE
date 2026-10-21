@@ -45,6 +45,10 @@ public class SecurityConfig {
                         .requestMatchers("/api/ia/**")
                         .hasRole("ADMIN")
 
+                        // Nao existe provedor de pagamento confiavel integrado; negar a rota simulada.
+                        .requestMatchers(HttpMethod.POST, "/api/pedidos/*/confirmar-pagamento").denyAll()
+                        .requestMatchers(HttpMethod.POST, "/api/pedidos/*/status").hasRole("ADMIN")
+
                         .requestMatchers(HttpMethod.POST, "/api/pedidos/**").hasAnyRole("CLIENTE", "ADMIN")
                         .requestMatchers(HttpMethod.GET, "/api/pedidos/**").hasAnyRole("CLIENTE", "ADMIN")
 
@@ -65,23 +69,10 @@ public class SecurityConfig {
                         )
 
                         .successHandler((request, response, authentication) -> {
-
-                            System.out.println("======================================");
-                            System.out.println("=== LOGIN GOOGLE REALIZADO COM SUCESSO ===");
-                            System.out.println("Usuário: " + authentication.getName());
-                            System.out.println("======================================");
-
                             response.sendRedirect("http://localhost:5173");
                         })
 
                         .failureHandler((request, response, exception) -> {
-
-                            System.out.println("======================================");
-                            System.out.println("=== ERRO NO LOGIN GOOGLE ===");
-                            System.out.println("======================================");
-
-                            exception.printStackTrace();
-
                             response.sendRedirect(
                                     "http://localhost:5173/login?erro=google"
                             );

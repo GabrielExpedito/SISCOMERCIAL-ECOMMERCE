@@ -42,11 +42,6 @@ export const api = {
 
   buscarPedido: (numero) => request(`/pedidos/${numero}`),
 
-  confirmarPagamento: (id) =>
-    request(`/pedidos/${id}/confirmar-pagamento`, {
-      method: "POST",
-    }),
-
   chatAgente: (sessionId, mensagem) =>
     request("/ia/chat", {
       method: "POST",

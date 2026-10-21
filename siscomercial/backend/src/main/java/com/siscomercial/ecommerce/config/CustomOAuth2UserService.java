@@ -22,20 +22,11 @@ public class CustomOAuth2UserService extends OidcUserService {
     @Override
     public OidcUser loadUser(OidcUserRequest userRequest)
             throws OAuth2AuthenticationException {
-
-        System.out.println("======================================");
-        System.out.println("=== CUSTOM OIDC USER SERVICE ===");
-        System.out.println("======================================");
-
         OidcUser googleUser = super.loadUser(userRequest);
 
         String googleId = googleUser.getAttribute("sub");
         String email = googleUser.getAttribute("email");
         String nome = googleUser.getAttribute("name");
-
-        System.out.println("Google ID: " + googleId);
-        System.out.println("Email: " + email);
-        System.out.println("Nome: " + nome);
 
         if (googleId == null || email == null) {
             throw new OAuth2AuthenticationException(
@@ -51,11 +42,6 @@ public class CustomOAuth2UserService extends OidcUserService {
                 email,
                 nome
         );
-
-        System.out.println("Cliente encontrado/criado:");
-        System.out.println("ID: " + cliente.getId());
-        System.out.println("Email: " + cliente.getEmail());
-        System.out.println("Perfil: " + cliente.getPerfil());
 
         return new DefaultOidcUser(
                 List.of(

@@ -21,6 +21,7 @@ com\siscomercial\ecommerce\marketplace\MarketplaceOrderSyncOrchestratorService.c
 com\siscomercial\ecommerce\model\HistoricoStatusPedido.class
 com\siscomercial\ecommerce\repository\HistoricoStatusPedidoRepository.class
 com\siscomercial\ecommerce\model\DTO\RetaguardaDTOs$ClienteResumoDTO.class
+com\siscomercial\ecommerce\model\DTO\CadastroClienteRequest$DadosCadastroCliente.class
 com\siscomercial\ecommerce\controller\MarketplaceController.class
 com\siscomercial\ecommerce\service\WhatsAppService$ResultadoEnvio.class
 com\siscomercial\ecommerce\marketplace\MarketplaceGateway.class
@@ -43,7 +44,6 @@ com\siscomercial\ecommerce\repository\ImportacaoPedidoMarketplaceRepository.clas
 com\siscomercial\ecommerce\repository\MovimentacaoEstoqueRepository.class
 com\siscomercial\ecommerce\config\AmazonProperties.class
 com\siscomercial\ecommerce\marketplace\MarketplaceGateway$ResultadoOperacao.class
-com\siscomercial\ecommerce\controller\ClienteController$CadastroClienteRequest.class
 com\siscomercial\ecommerce\config\PasswordConfig.class
 com\siscomercial\ecommerce\model\StatusPedido$1.class
 com\siscomercial\ecommerce\repository\HistoricoPrecoRepository.class
@@ -106,6 +106,7 @@ com\siscomercial\ecommerce\model\PublicacaoMarketplace.class
 com\siscomercial\ecommerce\ai\AgenteIAAssistant.class
 com\siscomercial\ecommerce\marketplace\IntegracaoMarketplaceService.class
 com\siscomercial\ecommerce\model\IntegracaoMarketplace.class
+com\siscomercial\ecommerce\model\DTO\CadastroClienteRequest.class
 com\siscomercial\ecommerce\repository\PublicacaoMarketplaceRepository.class
 com\siscomercial\ecommerce\model\DTO\RetaguardaDTOs$CancelarPedidoAdminRequest.class
 com\siscomercial\ecommerce\marketplace\MercadoLivreMarketplaceGateway.class
