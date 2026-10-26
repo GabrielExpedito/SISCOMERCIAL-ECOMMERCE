@@ -31,6 +31,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(RetaguardaPedidoController.class)
@@ -131,6 +132,7 @@ class RetaguardaPedidoControllerTest {
         AlterarStatusAdminRequest request = new AlterarStatusAdminRequest(StatusPedido.EM_SEPARACAO);
 
         mockMvc.perform(post("/api/retaguarda/pedidos/1/status")
+                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
@@ -148,6 +150,7 @@ class RetaguardaPedidoControllerTest {
         AlterarStatusAdminRequest request = new AlterarStatusAdminRequest(StatusPedido.ENTREGUE);
 
         mockMvc.perform(post("/api/retaguarda/pedidos/1/status")
+                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isUnprocessableEntity())
@@ -164,6 +167,7 @@ class RetaguardaPedidoControllerTest {
         CancelarPedidoAdminRequest request = new CancelarPedidoAdminRequest("Cliente desistiu da compra");
 
         mockMvc.perform(post("/api/retaguarda/pedidos/1/cancelar")
+                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
@@ -179,6 +183,7 @@ class RetaguardaPedidoControllerTest {
         when(pedidoService.buscarPorId(1L)).thenReturn(pedidoExemplo);
 
         mockMvc.perform(post("/api/retaguarda/pedidos/1/faturar")
+                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"numeroNota\":\"123\",\"chaveNota\":\"chave-123\"}"))
                 .andExpect(status().isOk());
@@ -195,6 +200,7 @@ class RetaguardaPedidoControllerTest {
                 .thenReturn(pedidoExemplo);
 
         mockMvc.perform(post("/api/retaguarda/pedidos/1/enviar")
+                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"codigoRastreamento\":\"BR123\"}"))
                 .andExpect(status().isOk())

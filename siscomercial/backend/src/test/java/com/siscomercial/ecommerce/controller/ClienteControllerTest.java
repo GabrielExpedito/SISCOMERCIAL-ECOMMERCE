@@ -26,6 +26,7 @@ import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.oidcLogin;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -42,6 +43,7 @@ class ClienteControllerTest {
                 .thenReturn(clienteDeResposta());
 
         mockMvc.perform(post("/api/clientes")
+                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(corpoCadastro("")))
                 .andExpect(status().isOk())
@@ -62,6 +64,7 @@ class ClienteControllerTest {
                 + "\"senhaHash\":\"hash-injetado\",\"googleId\":\"google-injetado\"";
 
         mockMvc.perform(post("/api/clientes")
+                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(corpoCadastro(camposPrivilegiados)))
                 .andExpect(status().isOk());
@@ -79,6 +82,7 @@ class ClienteControllerTest {
                 + "\"permissoes\":[\"ADMINISTRAR_USUARIOS\"]";
 
         mockMvc.perform(post("/api/clientes")
+                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(corpoCadastro(aliases)))
                 .andExpect(status().isOk());
@@ -94,6 +98,7 @@ class ClienteControllerTest {
                 .thenReturn(clienteDeResposta());
 
         mockMvc.perform(post("/api/clientes")
+                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(corpoCadastro("\"id\":1")))
                 .andExpect(status().isOk());
