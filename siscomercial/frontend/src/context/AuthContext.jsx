@@ -15,12 +15,8 @@ export function AuthProvider({ children }) {
     try {
       const usuarioAtual = await api.buscarUsuarioAtual();
 
-      console.log("USUARIO AUTENTICADO:", usuarioAtual);
-
       setUsuario(usuarioAtual);
     } catch (error) {
-      console.log("Nenhum usuário autenticado.");
-
       setUsuario(null);
     } finally {
       setCarregando(false);
@@ -28,11 +24,13 @@ export function AuthProvider({ children }) {
   }
 
 function entrarComGoogle() {
-  window.location.href = "http://localhost:8080/oauth2/authorization/google";
+  window.location.href = "/oauth2/authorization/google";
 }
 
-function sair() {
-  window.location.href = "http://localhost:8080/logout";
+async function sair() {
+  await api.sair();
+  setUsuario(null);
+  window.location.assign("/");
 }
 
   const autenticado = usuario !== null;

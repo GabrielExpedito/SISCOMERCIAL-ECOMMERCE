@@ -31,6 +31,7 @@ public class Pagamento {
     private BigDecimal valor;
 
     @Column(name = "identificador_transacao")
+    @ToString.Exclude
     private String identificadorTransacao;
 
     @Enumerated(EnumType.STRING)

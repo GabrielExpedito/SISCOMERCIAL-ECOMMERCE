@@ -11,6 +11,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.URI;
 import java.net.URLEncoder;
@@ -26,6 +28,7 @@ import java.util.Map;
 @Service
 @RequiredArgsConstructor
 public class IntegracaoMarketplaceService {
+    private static final Logger log = LoggerFactory.getLogger(IntegracaoMarketplaceService.class);
     private final IntegracaoMarketplaceRepository repository;
     private final AmazonProperties amazonProperties;
     private final AmazonAuthenticationService amazonAuthenticationService;
@@ -93,7 +96,7 @@ public class IntegracaoMarketplaceService {
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
             JsonNode token = objectMapper.readTree(response.body());
             if (response.statusCode() < 200 || response.statusCode() >= 300 || token.path("access_token").asText().isBlank()) {
-                throw new RegraNegocioException("Mercado Livre recusou a autorizacao: " + token.path("message").asText("erro sem detalhes"));
+                throw new RegraNegocioException("Mercado Livre recusou a autorização (HTTP " + response.statusCode() + ").");
             }
             String accessToken = token.path("access_token").asText();
             JsonNode usuario = consultarUsuario(accessToken);
@@ -107,7 +110,10 @@ public class IntegracaoMarketplaceService {
             integracao.setStatus(StatusIntegracaoMarketplace.ATIVA);
             return repository.save(integracao);
         } catch (RegraNegocioException e) { throw e;
-        } catch (Exception e) { throw new RegraNegocioException("Falha ao concluir autorizacao Mercado Livre: " + e.getMessage()); }
+        } catch (Exception e) {
+            log.warn("Mercado Livre OAuth exchange failed; causeType={}", e.getClass().getSimpleName());
+            throw new RegraNegocioException("Falha ao concluir autorização Mercado Livre.");
+        }
     }
 
     @Transactional
@@ -199,7 +205,7 @@ public class IntegracaoMarketplaceService {
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
             JsonNode token = objectMapper.readTree(response.body());
             if (response.statusCode() < 200 || response.statusCode() >= 300 || token.path("access_token").asText().isBlank()) {
-                throw new RegraNegocioException("Shopee recusou a autorizacao: " + token.path("message").asText("erro sem detalhes"));
+                throw new RegraNegocioException("Shopee recusou a autorização (HTTP " + response.statusCode() + ").");
             }
             integracao.setTokenProtegido(credencialService.proteger(token.path("access_token").asText()));
             integracao.setCredenciaisProtegidas(credencialService.proteger(token.path("refresh_token").asText()));
@@ -213,7 +219,8 @@ public class IntegracaoMarketplaceService {
         } catch (RegraNegocioException e) {
             throw e;
         } catch (Exception e) {
-            throw new RegraNegocioException("Falha ao concluir autorizacao Shopee: " + e.getMessage());
+            log.warn("Shopee OAuth exchange failed; causeType={}", e.getClass().getSimpleName());
+            throw new RegraNegocioException("Falha ao concluir autorização Shopee.");
         }
     }
 
@@ -238,8 +245,8 @@ public class IntegracaoMarketplaceService {
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
             JsonNode json = objectMapper.readTree(response.body());
             if (response.statusCode() < 200 || response.statusCode() >= 300 || !json.path("error").asText("").isBlank()) {
-                throw new RegraNegocioException("Falha ao diagnosticar a integracao Shopee: "
-                        + json.path("message").asText(json.path("error").asText("erro sem detalhes")));
+                throw new RegraNegocioException("Falha ao diagnosticar a integração Shopee (HTTP "
+                        + response.statusCode() + ").");
             }
             integracao.setUltimaSincronizacao(LocalDateTime.now());
             if (integracao.getStatus() == StatusIntegracaoMarketplace.ERRO) {
@@ -249,7 +256,8 @@ public class IntegracaoMarketplaceService {
         } catch (RegraNegocioException e) {
             throw e;
         } catch (Exception e) {
-            throw new RegraNegocioException("Falha ao diagnosticar a integracao Shopee: " + e.getMessage());
+            log.warn("Shopee integration diagnostic failed; causeType={}", e.getClass().getSimpleName());
+            throw new RegraNegocioException("Falha ao diagnosticar a integração Shopee.");
         }
     }
 
@@ -311,7 +319,10 @@ public class IntegracaoMarketplaceService {
             if (response.statusCode() != 200) throw new RegraNegocioException("Token do Mercado Livre invalido (HTTP " + response.statusCode() + ").");
             return objectMapper.readTree(response.body());
         } catch (RegraNegocioException e) { throw e;
-        } catch (Exception e) { throw new RegraNegocioException("Falha ao consultar conta Mercado Livre: " + e.getMessage()); }
+        } catch (Exception e) {
+            log.warn("Mercado Livre account lookup failed; causeType={}", e.getClass().getSimpleName());
+            throw new RegraNegocioException("Falha ao consultar conta Mercado Livre.");
+        }
     }
     private IntegracaoMarketplace buscarShopee(Long id) {
         IntegracaoMarketplace i = buscar(id);

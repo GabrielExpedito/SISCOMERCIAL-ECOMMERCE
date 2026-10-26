@@ -102,7 +102,7 @@ public class AgenteFerramentas {
         } catch (RecursoNaoEncontradoException e) {
             return "Nao encontrei nenhum pedido com o numero " + numeroPedido + ". Nada foi alterado.";
         } catch (RegraNegocioException e) {
-            return "Nao foi possivel preparar o cancelamento: " + e.getMessage();
+            return "Nao foi possivel preparar o cancelamento devido a uma regra de negocio.";
         }
     }
 
@@ -125,7 +125,7 @@ public class AgenteFerramentas {
         } catch (RecursoNaoEncontradoException e) {
             return "Nao encontrei nenhum pedido com o numero " + numeroPedido + ". Nada foi alterado.";
         } catch (RegraNegocioException e) {
-            return "Nao foi possivel preparar a emissao da nota fiscal: " + e.getMessage();
+            return "Nao foi possivel preparar a emissao da nota fiscal devido a uma regra de negocio.";
         }
     }
 
@@ -195,7 +195,7 @@ public class AgenteFerramentas {
             return "Preparei o cadastro do produto.\n\n" + resumo + "\nPara confirmar o cadastro, peça a confirmação " +
                     "explícita do administrador " + "e depois chame confirmarOperacao com o token: " + token;
         } catch (RegraNegocioException e) {
-            return "Não foi possível preparar o cadastro do produto: " + e.getMessage();
+            return "Não foi possível preparar o cadastro do produto devido a uma regra de negócio.";
         }
     }
 

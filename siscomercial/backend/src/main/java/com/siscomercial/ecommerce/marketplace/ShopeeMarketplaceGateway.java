@@ -9,6 +9,8 @@ import com.siscomercial.ecommerce.model.Produto;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
@@ -32,6 +34,7 @@ import java.util.Map;
  */
 @Component
 public class ShopeeMarketplaceGateway implements MarketplaceGateway {
+    private static final Logger log = LoggerFactory.getLogger(ShopeeMarketplaceGateway.class);
     private static final String BASE_URL = "https://partner.shopeemobile.com";
     private static final String PRODUCT_PATH = "/api/v2/product/add_item";
     private static final String UPDATE_ITEM_PATH = "/api/v2/product/update_item";
@@ -111,7 +114,8 @@ public class ShopeeMarketplaceGateway implements MarketplaceGateway {
         } catch (RegraNegocioException e) {
             throw e;
         } catch (Exception e) {
-            throw new RegraNegocioException("Falha ao publicar na Shopee: " + e.getMessage());
+            log.warn("Shopee publication failed; causeType={}", e.getClass().getSimpleName());
+            throw new RegraNegocioException("Falha ao publicar na Shopee.");
         }
     }
 
@@ -130,7 +134,8 @@ public class ShopeeMarketplaceGateway implements MarketplaceGateway {
         } catch (RegraNegocioException e) {
             throw e;
         } catch (Exception e) {
-            throw new RegraNegocioException("Falha ao encerrar a publicacao na Shopee: " + e.getMessage());
+            log.warn("Shopee listing closure failed; causeType={}", e.getClass().getSimpleName());
+            throw new RegraNegocioException("Falha ao encerrar a publicação na Shopee.");
         }
     }
 
@@ -158,7 +163,8 @@ public class ShopeeMarketplaceGateway implements MarketplaceGateway {
         } catch (RegraNegocioException e) {
             throw e;
         } catch (Exception e) {
-            throw new RegraNegocioException("Falha ao sincronizar a publicacao na Shopee: " + e.getMessage());
+            log.warn("Shopee listing sync failed; causeType={}", e.getClass().getSimpleName());
+            throw new RegraNegocioException("Falha ao sincronizar a publicação na Shopee.");
         }
     }
 
@@ -280,13 +286,11 @@ public class ShopeeMarketplaceGateway implements MarketplaceGateway {
         JsonNode json = response.body() == null || response.body().isBlank()
                 ? objectMapper.createObjectNode() : objectMapper.readTree(response.body());
         if (response.statusCode() < 200 || response.statusCode() >= 300) {
-            throw new RegraNegocioException("Falha ao " + operacao + " (HTTP " + response.statusCode() + "): "
-                    + json.path("message").asText(json.path("error").asText("erro sem detalhes")));
+            throw new RegraNegocioException("Falha ao " + operacao + " (HTTP " + response.statusCode() + ").");
         }
         String error = json.path("error").asText("");
         if (!error.isBlank()) {
-            throw new RegraNegocioException("Shopee recusou a operacao: " + error + " - "
-                    + json.path("message").asText("sem detalhes"));
+            throw new RegraNegocioException("Shopee recusou a operação.");
         }
         return json;
     }

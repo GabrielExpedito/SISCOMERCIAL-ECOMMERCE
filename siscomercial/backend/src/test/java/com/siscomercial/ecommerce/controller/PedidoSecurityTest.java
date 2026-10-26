@@ -19,7 +19,10 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import org.springframework.mock.web.MockHttpSession;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.oidcLogin;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(PedidoController.class)
@@ -39,6 +42,23 @@ class PedidoSecurityTest {
     private CustomOAuth2UserService customOAuth2UserService;
 
     @Test
+    @WithMockUser(roles = "ADMIN")
+    void requisicaoDeAlteracaoSemTokenCsrfERejeitada() throws Exception {
+        mockMvc.perform(post("/api/pedidos/1/status")
+                        .contentType("application/json")
+                        .content("{\"status\":\"EM_SEPARACAO\"}"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void logoutInvalidaSessao() throws Exception {
+        MockHttpSession session = new MockHttpSession();
+        mockMvc.perform(post("/api/auth/logout").session(session).with(csrf()))
+                .andExpect(status().isNoContent());
+        assertThrows(IllegalStateException.class, session::getAttributeNames);
+    }
+
+    @Test
     @WithMockUser(roles = "CLIENTE")
     void clienteNaoPodeConfirmarPagamentoArbitrariamente() throws Exception {
         mockMvc.perform(post("/api/pedidos/1/confirmar-pagamento"))
@@ -48,7 +68,7 @@ class PedidoSecurityTest {
     @Test
     void requisicaoAnonimaNaoPodeConfirmarPagamento() throws Exception {
         mockMvc.perform(post("/api/pedidos/1/confirmar-pagamento"))
-                .andExpect(status().is3xxRedirection());
+                .andExpect(status().isForbidden());
     }
 
     @Test
@@ -65,7 +85,7 @@ class PedidoSecurityTest {
         mockMvc.perform(post("/api/pedidos/1/status")
                         .contentType("application/json")
                         .content("{\"status\":\"EM_SEPARACAO\"}"))
-                .andExpect(status().is3xxRedirection());
+                .andExpect(status().isForbidden());
     }
 
     @Test
@@ -75,15 +95,16 @@ class PedidoSecurityTest {
         admin.setPerfil(PerfilUsuario.ADMIN);
         Pedido pedido = new Pedido();
         pedido.setStatus(StatusPedido.EM_SEPARACAO);
-        org.mockito.Mockito.when(clienteService.buscarPorEmail("admin@example.test"))
+        org.mockito.Mockito.when(clienteService.buscarAutenticado(org.mockito.ArgumentMatchers.any()))
                 .thenReturn(admin);
         org.mockito.Mockito.when(pedidoService.alterarStatus(1L, StatusPedido.EM_SEPARACAO,
                         OrigemAlteracaoStatusPedido.ADMINISTRADOR, "admin@example.test"))
                 .thenReturn(pedido);
 
         mockMvc.perform(post("/api/pedidos/1/status")
-                        .with(oidcLogin().idToken(token -> token.claim("email", "admin@example.test"))
+                        .with(oidcLogin().idToken(token -> token.subject("admin-sub").claim("email", "admin@example.test"))
                                 .authorities(new SimpleGrantedAuthority("ROLE_ADMIN")))
+                        .with(csrf())
                         .contentType("application/json")
                         .content("{\"status\":\"EM_SEPARACAO\"}"))
                 .andExpect(status().isOk())

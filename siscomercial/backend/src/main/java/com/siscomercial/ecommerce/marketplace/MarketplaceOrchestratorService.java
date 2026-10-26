@@ -83,10 +83,10 @@ public class MarketplaceOrchestratorService {
             return publicacaoRepository.save(publicacao);
         } catch (RuntimeException ex) {
             publicacao.setUltimaSincronizacao(LocalDateTime.now());
-            publicacao.setUltimoErro(ex.getMessage());
+            publicacao.setUltimoErro("Falha na comunicação com marketplace.");
             publicacaoRepository.save(publicacao);
             registrarHistorico(integracao, "SINCRONIZAR_PUBLICACAO", publicacao.getIdentificadorExterno(),
-                    StatusHistoricoIntegracaoMarketplace.FALHA, ex.getMessage());
+                    StatusHistoricoIntegracaoMarketplace.FALHA, "Falha na comunicação com marketplace.");
             throw ex;
         }
     }
@@ -143,11 +143,11 @@ public class MarketplaceOrchestratorService {
                     StatusHistoricoIntegracaoMarketplace.SUCESSO, null);
             return atualizada;
         } catch (RuntimeException ex) {
-            publicacao.setUltimoErro(ex.getMessage());
+            publicacao.setUltimoErro("Falha na comunicação com marketplace.");
             publicacao.setUltimaSincronizacao(LocalDateTime.now());
             publicacaoRepository.save(publicacao);
             registrarHistorico(integracao, "ENCERRAR_PUBLICACAO", publicacao.getIdentificadorExterno(),
-                    StatusHistoricoIntegracaoMarketplace.FALHA, ex.getMessage());
+                    StatusHistoricoIntegracaoMarketplace.FALHA, "Falha na comunicação com marketplace.");
             throw ex;
         }
     }
@@ -197,9 +197,10 @@ public class MarketplaceOrchestratorService {
             falha.setStatus(StatusPublicacaoMarketplace.ERRO);
             falha.setQuantidadePublicada(0);
             falha.setUltimaSincronizacao(LocalDateTime.now());
-            falha.setUltimoErro(ex.getMessage());
+            falha.setUltimoErro("Falha na comunicação com marketplace.");
             falha = publicacaoRepository.save(falha);
-            registrarHistorico(integracao, "PUBLICAR_PRODUTO", null, StatusHistoricoIntegracaoMarketplace.FALHA, ex.getMessage());
+            registrarHistorico(integracao, "PUBLICAR_PRODUTO", null, StatusHistoricoIntegracaoMarketplace.FALHA,
+                    "Falha na comunicação com marketplace.");
             return falha;
         }
     }
@@ -251,10 +252,10 @@ public class MarketplaceOrchestratorService {
             falha.setStatus(StatusPublicacaoMarketplace.ERRO);
             falha.setQuantidadePublicada(0);
             falha.setUltimaSincronizacao(LocalDateTime.now());
-            falha.setUltimoErro(ex.getMessage());
+            falha.setUltimoErro("Falha na comunicação com marketplace.");
             falha = publicacaoRepository.save(falha);
             registrarHistorico(integracao, "PUBLICAR_PRODUTO", null,
-                    StatusHistoricoIntegracaoMarketplace.FALHA, ex.getMessage());
+                    StatusHistoricoIntegracaoMarketplace.FALHA, "Falha na comunicação com marketplace.");
             return falha;
         }
 

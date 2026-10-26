@@ -166,7 +166,7 @@ class MarketplaceOrchestratorServiceTest {
 
         assertEquals(2, resultado.size());
         assertEquals(StatusPublicacaoMarketplace.ERRO, resultado.get(0).getStatus());
-        assertEquals("Falha ML", resultado.get(0).getUltimoErro());
+        assertEquals("Falha na comunicação com marketplace.", resultado.get(0).getUltimoErro());
         assertEquals(StatusPublicacaoMarketplace.PUBLICADA, resultado.get(1).getStatus());
         assertEquals("SHOP-2", resultado.get(1).getIdentificadorExterno());
         verify(gatewayMl).publicar(ml, produto);
@@ -189,7 +189,7 @@ class MarketplaceOrchestratorServiceTest {
         assertEquals(StatusPublicacaoMarketplace.PUBLICADA, resultado.get(0).getStatus());
         assertEquals("MLB-1", resultado.get(0).getIdentificadorExterno());
         assertEquals(StatusPublicacaoMarketplace.ERRO, resultado.get(1).getStatus());
-        assertEquals("Falha Shopee", resultado.get(1).getUltimoErro());
+        assertEquals("Falha na comunicação com marketplace.", resultado.get(1).getUltimoErro());
         verify(gatewayMl).publicar(ml, produto);
         verify(gatewayShopee).publicar(shopee, produto);
     }
@@ -209,7 +209,7 @@ class MarketplaceOrchestratorServiceTest {
         List<PublicacaoMarketplace> resultado = service.publicarMulticanal(3L);
 
         assertEquals(StatusPublicacaoMarketplace.ERRO, resultado.get(0).getStatus());
-        assertEquals("Falha Amazon", resultado.get(0).getUltimoErro());
+        assertEquals("Falha na comunicação com marketplace.", resultado.get(0).getUltimoErro());
         assertEquals(StatusPublicacaoMarketplace.PUBLICADA, resultado.get(1).getStatus());
         assertEquals("MLB-OK", resultado.get(1).getIdentificadorExterno());
         assertEquals(StatusPublicacaoMarketplace.PUBLICADA, resultado.get(2).getStatus());

@@ -2,6 +2,7 @@ package com.siscomercial.ecommerce.model;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import lombok.ToString;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -23,6 +24,7 @@ public class Pedido {
 
     /** Numero publico do pedido, ex: SIS-2026-000001 (secao 7.9). */
     @Column(name = "numero_pedido", nullable = false, unique = true)
+    @ToString.Exclude
     private String numeroPedido;
 
     @Column(name = "data_hora", nullable = false)
@@ -30,6 +32,7 @@ public class Pedido {
 
     @ManyToOne
     @JoinColumn(name = "cliente_id", nullable = false)
+    @ToString.Exclude
     private Cliente cliente;
 
     @Enumerated(EnumType.STRING)
@@ -49,13 +52,13 @@ public class Pedido {
     private BigDecimal total = BigDecimal.ZERO;
 
     // Snapshot do endereco de entrega no momento da compra (RN025)
-    private String enderecoCep;
-    private String enderecoLogradouro;
-    private String enderecoNumero;
-    private String enderecoComplemento;
-    private String enderecoBairro;
-    private String enderecoCidade;
-    private String enderecoEstado;
+    @ToString.Exclude private String enderecoCep;
+    @ToString.Exclude private String enderecoLogradouro;
+    @ToString.Exclude private String enderecoNumero;
+    @ToString.Exclude private String enderecoComplemento;
+    @ToString.Exclude private String enderecoBairro;
+    @ToString.Exclude private String enderecoCidade;
+    @ToString.Exclude private String enderecoEstado;
 
     @Column(name = "modalidade_frete")
     private String modalidadeFrete;
@@ -64,21 +67,26 @@ public class Pedido {
     private Integer prazoEstimadoDias;
 
     @Column(name = "codigo_rastreamento")
+    @ToString.Exclude
     private String codigoRastreamento;
 
     @Column(name = "reserva_expira_em")
     private LocalDateTime reservaExpiraEm;
 
     @Column(name = "numero_nota_fiscal")
+    @ToString.Exclude
     private String numeroNotaFiscal;
 
     @Column(name = "chave_nota_fiscal")
+    @ToString.Exclude
     private String chaveNotaFiscal;
 
     @OneToMany(mappedBy = "pedido", cascade = CascadeType.ALL, orphanRemoval = true)
+    @ToString.Exclude
     private List<ItemPedido> itens = new ArrayList<>();
 
     @OneToOne(mappedBy = "pedido", cascade = CascadeType.ALL, orphanRemoval = true)
+    @ToString.Exclude
     private Pagamento pagamento;
 
     /** RN024: define quais status ainda permitem alteracao/cancelamento livre. */

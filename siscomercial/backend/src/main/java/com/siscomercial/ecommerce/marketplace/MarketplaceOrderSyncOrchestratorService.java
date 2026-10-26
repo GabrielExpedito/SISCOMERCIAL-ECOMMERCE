@@ -58,7 +58,7 @@ public class MarketplaceOrderSyncOrchestratorService {
                         "SINCRONIZAR_PEDIDO",
                         pedido.identificadorExterno(),
                         StatusHistoricoIntegracaoMarketplace.FALHA,
-                        ex.getMessage()
+                        "Falha ao processar pedido importado."
                 );
             }
         }

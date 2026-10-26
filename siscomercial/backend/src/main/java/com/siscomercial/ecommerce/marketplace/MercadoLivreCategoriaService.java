@@ -6,6 +6,8 @@ import com.siscomercial.ecommerce.exception.RegraNegocioException;
 import com.siscomercial.ecommerce.model.IntegracaoMarketplace;
 import com.siscomercial.ecommerce.model.Marketplace;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.net.URI;
@@ -22,6 +24,7 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class MercadoLivreCategoriaService {
+    private static final Logger log = LoggerFactory.getLogger(MercadoLivreCategoriaService.class);
     private static final String SITE_ID = "MLB";
     private static final String API_BASE = "https://api.mercadolibre.com";
 
@@ -72,7 +75,8 @@ public class MercadoLivreCategoriaService {
         } catch (RegraNegocioException e) {
             throw e;
         } catch (Exception e) {
-            throw new RegraNegocioException("Falha ao consultar categorias do Mercado Livre: " + e.getMessage());
+            log.warn("Mercado Livre category lookup failed; causeType={}", e.getClass().getSimpleName());
+            throw new RegraNegocioException("Falha ao consultar categorias do Mercado Livre.");
         }
     }
 
@@ -105,7 +109,8 @@ public class MercadoLivreCategoriaService {
         } catch (RegraNegocioException e) {
             throw e;
         } catch (Exception e) {
-            throw new RegraNegocioException("Falha ao consultar atributos da categoria " + categoryId + ": " + e.getMessage());
+            log.warn("Mercado Livre category attributes lookup failed; causeType={}", e.getClass().getSimpleName());
+            throw new RegraNegocioException("Falha ao consultar atributos da categoria.");
         }
     }
 
@@ -123,9 +128,8 @@ public class MercadoLivreCategoriaService {
                 : objectMapper.readTree(response.body());
 
         if (response.statusCode() < 200 || response.statusCode() >= 300) {
-            String message = json.path("message").asText(json.path("error").asText("erro sem detalhes"));
-            throw new RegraNegocioException("Mercado Livre recusou a solicitacao para " + operacao
-                    + " (HTTP " + response.statusCode() + "): " + message);
+            throw new RegraNegocioException("Mercado Livre recusou a solicitação para " + operacao
+                    + " (HTTP " + response.statusCode() + ").");
         }
         return json;
     }

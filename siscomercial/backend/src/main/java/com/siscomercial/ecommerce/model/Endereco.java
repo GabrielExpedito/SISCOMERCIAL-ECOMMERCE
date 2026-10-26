@@ -21,14 +21,21 @@ public class Endereco {
     @ToString.Exclude
     private Cliente cliente;
 
+    @ToString.Exclude
     @Column(nullable = false)
     private String cep;
 
+    @ToString.Exclude
     private String logradouro;
+    @ToString.Exclude
     private String numero;
+    @ToString.Exclude
     private String complemento;
+    @ToString.Exclude
     private String bairro;
+    @ToString.Exclude
     private String cidade;
+    @ToString.Exclude
     private String estado;
 
     @Column(name = "principal")

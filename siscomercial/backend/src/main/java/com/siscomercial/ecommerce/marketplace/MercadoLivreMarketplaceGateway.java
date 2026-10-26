@@ -8,6 +8,8 @@ import com.siscomercial.ecommerce.model.Marketplace;
 import com.siscomercial.ecommerce.model.Produto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
 import java.io.ByteArrayOutputStream;
@@ -34,6 +36,7 @@ import java.util.Map;
 @Component
 @RequiredArgsConstructor
 public class MercadoLivreMarketplaceGateway implements MarketplaceGateway {
+    private static final Logger log = LoggerFactory.getLogger(MercadoLivreMarketplaceGateway.class);
     private static final URI ITEMS_URI = URI.create("https://api.mercadolibre.com/items");
     private final CredencialMarketplaceService credencialService;
     private final MercadoLivreCategoriaService categoriaService;
@@ -90,7 +93,8 @@ public class MercadoLivreMarketplaceGateway implements MarketplaceGateway {
         } catch (RegraNegocioException e) {
             throw e;
         } catch (Exception e) {
-            throw new RegraNegocioException("Falha ao consultar pedidos do Mercado Livre: " + e.getMessage());
+            log.warn("Mercado Livre order retrieval failed; causeType={}", e.getClass().getSimpleName());
+            throw new RegraNegocioException("Falha ao consultar pedidos do Mercado Livre.");
         }
     }
 
@@ -154,7 +158,8 @@ public class MercadoLivreMarketplaceGateway implements MarketplaceGateway {
         } catch (RegraNegocioException e) {
             throw e;
         } catch (Exception e) {
-            throw new RegraNegocioException("Falha ao publicar no Mercado Livre: " + e.getMessage());
+            log.warn("Mercado Livre publication failed; causeType={}", e.getClass().getSimpleName());
+            throw new RegraNegocioException("Falha ao publicar no Mercado Livre.");
         }
     }
 
@@ -178,7 +183,8 @@ public class MercadoLivreMarketplaceGateway implements MarketplaceGateway {
         } catch (RegraNegocioException e) {
             throw e;
         } catch (Exception e) {
-            throw new RegraNegocioException("Falha ao encerrar o anuncio no Mercado Livre: " + e.getMessage());
+            log.warn("Mercado Livre listing closure failed; causeType={}", e.getClass().getSimpleName());
+            throw new RegraNegocioException("Falha ao encerrar o anúncio no Mercado Livre.");
         }
     }
 
@@ -220,7 +226,8 @@ public class MercadoLivreMarketplaceGateway implements MarketplaceGateway {
         } catch (RegraNegocioException e) {
             throw e;
         } catch (Exception e) {
-            throw new RegraNegocioException("Falha ao sincronizar o anuncio no Mercado Livre: " + e.getMessage());
+            log.warn("Mercado Livre listing sync failed; causeType={}", e.getClass().getSimpleName());
+            throw new RegraNegocioException("Falha ao sincronizar o anúncio no Mercado Livre.");
         }
     }
 
@@ -513,29 +520,7 @@ public class MercadoLivreMarketplaceGateway implements MarketplaceGateway {
     }
 
     private String mensagemErroMercadoLivre(int statusCode, JsonNode json, String operacao) {
-        String message = json.path("message").asText("");
-        String error = json.path("error").asText("");
-        StringBuilder detalhe = new StringBuilder();
-        if (!message.isBlank()) detalhe.append(message);
-        if (!error.isBlank() && !error.equals(message)) {
-            if (detalhe.length() > 0) detalhe.append(" | ");
-            detalhe.append(error);
-        }
-        JsonNode causes = json.path("cause");
-        if (causes.isArray() && !causes.isEmpty()) {
-            for (JsonNode cause : causes) {
-                String causeMessage = cause.path("cause_message").asText(cause.path("message").asText(""));
-                String causeId = cause.path("cause_id").asText("");
-                if (!causeMessage.isBlank() || !causeId.isBlank()) {
-                    if (detalhe.length() > 0) detalhe.append(" | ");
-                    detalhe.append("causa");
-                    if (!causeId.isBlank()) detalhe.append(" ").append(causeId);
-                    if (!causeMessage.isBlank()) detalhe.append(": ").append(causeMessage);
-                }
-            }
-        }
-        if (detalhe.length() == 0) detalhe.append("erro sem detalhes");
-        return "Mercado Livre recusou a solicitacao para " + operacao + " (HTTP " + statusCode + "): " + detalhe;
+        return "Mercado Livre recusou a solicitação para " + operacao + " (HTTP " + statusCode + ").";
     }
 
     private boolean urlValida(String url) {

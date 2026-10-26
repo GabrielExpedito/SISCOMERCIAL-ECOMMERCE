@@ -3,6 +3,7 @@ package com.siscomercial.ecommerce.model;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Data;
+import lombok.ToString;
 
 import java.time.LocalDateTime;
 
@@ -31,10 +32,12 @@ public class IntegracaoMarketplace {
     private String identificadorExterno;
 
     @JsonIgnore
+    @ToString.Exclude
     @Column(name = "credenciais_protegidas", columnDefinition = "TEXT")
     private String credenciaisProtegidas;
 
     @JsonIgnore
+    @ToString.Exclude
     @Column(name = "token_protegido", columnDefinition = "TEXT")
     private String tokenProtegido;
 
@@ -42,6 +45,7 @@ public class IntegracaoMarketplace {
     private LocalDateTime tokenExpiraEm;
 
     @JsonIgnore
+    @ToString.Exclude
     @Column(name = "oauth_state")
     private String oauthState;
 

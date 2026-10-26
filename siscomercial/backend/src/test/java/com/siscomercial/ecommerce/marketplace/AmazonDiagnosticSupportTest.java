@@ -18,10 +18,10 @@ class AmazonDiagnosticSupportTest {
 
         assertTrue(nullo.contains("lwaTokenNull=true"));
         assertTrue(nullo.contains("lwaTokenEmpty=true"));
-        assertTrue(nullo.contains("tokensEqual=true"));
-        assertTrue(vazio.contains("lwaTokenLength=0"));
         assertTrue(vazio.contains("spApiTokenEmpty=true"));
         assertTrue(nullo.contains("lwaTokenId=unavailable"));
+        assertFalse(nullo.contains("TokenLength"));
+        assertFalse(nullo.contains("tokensEqual"));
         assertFalse(nullo.contains(token));
         assertFalse(vazio.contains(token));
     }
@@ -36,7 +36,6 @@ class AmazonDiagnosticSupportTest {
         String diagnostic = AmazonDiagnosticSupport.tokenDiagnostic(
                 "private-token-value", "private-token-value", properties, obtainedAt, requestAt);
 
-        assertTrue(diagnostic.contains("tokensEqual=true"));
         String lwaId = field(diagnostic, "lwaTokenId");
         String spApiId = field(diagnostic, "spApiTokenId");
         assertEquals(lwaId, spApiId);
@@ -55,7 +54,6 @@ class AmazonDiagnosticSupportTest {
         String diagnostic = AmazonDiagnosticSupport.tokenDiagnostic(
                 "lwa-token-value", "header-token-value", properties, Instant.now(), Instant.now());
 
-        assertTrue(diagnostic.contains("tokensEqual=false"));
         assertNotEquals(field(diagnostic, "lwaTokenId"), field(diagnostic, "spApiTokenId"));
         assertFalse(diagnostic.contains("lwa-token-value"));
         assertFalse(diagnostic.contains("header-token-value"));

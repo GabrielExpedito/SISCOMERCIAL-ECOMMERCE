@@ -79,7 +79,7 @@ class AmazonMarketplaceGatewayTest {
         @SuppressWarnings("unchecked") HttpResponse<String> response = mock(HttpResponse.class);
         doReturn(response).when(client).sendSpApi(any());
         when(response.statusCode()).thenReturn(403);
-        when(response.body()).thenReturn("{\"errors\":[{\"code\":\"Unauthorized\",\"message\":\"denied access-token-value client-secret-value refresh-token-value\"}]}");
+        when(response.body()).thenReturn("{\"errors\":[{\"code\":\"Unauthorized\",\"message\":\"denied access-token-value client-secret-value refresh-token-value email-falso@example.test\"}]}");
 
         RegraNegocioException ex = assertThrows(RegraNegocioException.class, () -> gateway.publicar(null, produto));
 
@@ -91,6 +91,7 @@ class AmazonMarketplaceGatewayTest {
         assertFalse(ex.getMessage().contains("access-token-value"));
         assertFalse(ex.getMessage().contains("client-secret-value"));
         assertFalse(ex.getMessage().contains("refresh-token-value"));
+        assertFalse(ex.getMessage().contains("email-falso@example.test"));
     }
 
     @Test
@@ -177,8 +178,10 @@ class AmazonMarketplaceGatewayTest {
         assertThrows(RegraNegocioException.class, () -> gateway.publicar(null, produto()));
         when(response.statusCode()).thenReturn(202);
         when(response.body()).thenReturn("{\"status\":\"INVALID\",\"issues\":[{\"message\":\"invalid listing\"}]}");
-        assertTrue(assertThrows(RegraNegocioException.class, () -> gateway.publicar(null, produto()))
-                .getMessage().contains("invalid listing"));
+        RegraNegocioException rejected = assertThrows(RegraNegocioException.class,
+                () -> gateway.publicar(null, produto()));
+        assertFalse(rejected.getMessage().contains("invalid listing"));
+        assertTrue(rejected.getMessage().contains("não aceitou"));
         when(response.body()).thenReturn("{}");
         assertTrue(assertThrows(RegraNegocioException.class, () -> gateway.publicar(null, produto()))
                 .getMessage().contains("incompleta"));
@@ -211,7 +214,7 @@ class AmazonMarketplaceGatewayTest {
         RegraNegocioException ex = assertThrows(RegraNegocioException.class, () -> gateway.publicar(null, produto()));
         assertTrue(ex.getMessage().contains("HTTP 403"));
         assertTrue(ex.getMessage().contains("Unauthorized"));
-        assertTrue(ex.getMessage().contains("Access to requested resource is denied."));
+        assertFalse(ex.getMessage().contains("Access to requested resource is denied."));
     }
 
     @Test
@@ -235,7 +238,7 @@ class AmazonMarketplaceGatewayTest {
         assertTrue(ex.getMessage().contains("HTTP 403"));
         assertTrue(ex.getMessage().contains("SP_API_VALIDATION"));
         assertTrue(ex.getMessage().contains("90000"));
-        assertTrue(ex.getMessage().contains("The merchant_suggested_asin provided does not exist."));
+        assertFalse(ex.getMessage().contains("The merchant_suggested_asin provided does not exist."));
     }
 
     @Test
@@ -313,7 +316,7 @@ class AmazonMarketplaceGatewayTest {
 
         assertTrue(ex.getMessage().contains("HTTP 403"));
         assertTrue(ex.getMessage().contains("SP_API_AUTHORIZATION"));
-        assertTrue(ex.getMessage().contains("revoked, malformed or invalid"));
+        assertFalse(ex.getMessage().contains("revoked, malformed or invalid"));
         assertTrue(ex.getMessage().contains("Request ID: 9f16552e-feb6-4664-a5b7-8085bcf4975c"));
     }
 
@@ -356,10 +359,10 @@ class AmazonMarketplaceGatewayTest {
         RegraNegocioException ex = assertThrows(RegraNegocioException.class, () -> gateway.publicar(null, produto()));
         assertTrue(ex.getMessage().contains("HTTP 400"));
         assertTrue(ex.getMessage().contains("InvalidInput"));
-        assertTrue(ex.getMessage().contains("SKU informado é inválido."));
+        assertFalse(ex.getMessage().contains("SKU informado é inválido."));
         assertTrue(ex.getMessage().contains("QuotaExceeded"));
-        assertTrue(ex.getMessage().contains("Limite de chamadas atingido."));
-        assertTrue(ex.getMessage().contains("Aguarde 60 segundos"));
+        assertFalse(ex.getMessage().contains("Limite de chamadas atingido."));
+        assertFalse(ex.getMessage().contains("Aguarde 60 segundos"));
         assertTrue(ex.getMessage().contains(";"));
     }
 
@@ -387,8 +390,8 @@ class AmazonMarketplaceGatewayTest {
 
         RegraNegocioException ex = assertThrows(RegraNegocioException.class, () -> gateway.publicar(null, produto()));
         String msg = ex.getMessage();
-        int ocorrencias = (msg.length() - msg.replace("Acesso não permitido", "").length()) / "Acesso não permitido".length();
-        assertEquals(1, ocorrencias, "Não deve duplicar a mensagem idêntica");
+        assertFalse(msg.contains("Acesso não permitido"), "A mensagem do provedor não deve ser exposta");
+        assertTrue(msg.contains("AccessDenied"));
     }
 
     private Produto produto() {

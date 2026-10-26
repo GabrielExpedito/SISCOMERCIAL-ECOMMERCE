@@ -141,8 +141,7 @@ public class ImagemProdutoService {
         } catch (IOException e) {
 
             throw new RegraNegocioException(
-                    "Nao foi possivel armazenar a imagem: "
-                            + e.getMessage()
+                    "Nao foi possivel armazenar a imagem."
             );
         }
     }

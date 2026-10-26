@@ -28,17 +28,13 @@ final class AmazonDiagnosticSupport {
         if (nodes.isArray()) {
             for (JsonNode node : nodes) {
                 String code = node.path("code").asText("").trim();
-                String message = node.path("message").asText("").trim();
-                String details = node.path("details").asText("").trim();
-                String item = code.isBlank() ? message : "[" + code + "] " + message;
-                if (!details.isBlank() && !details.equals(message)) item += " Detalhes: " + details;
+                String item = redact(safeCode(code), properties, accessToken);
                 if (!item.isBlank()) errors.add(redact(item, properties, accessToken));
             }
         }
         if (errors.isEmpty()) {
             String code = json.path("error").asText(json.path("code").asText(""));
-            String message = json.path("error_description").asText(json.path("message").asText(""));
-            String item = code.isBlank() ? message : "[" + code + "] " + message;
+            String item = redact(safeCode(code), properties, accessToken);
             if (!item.isBlank()) errors.add(redact(item, properties, accessToken));
         }
         String requestId = requestId(response);
@@ -67,19 +63,15 @@ final class AmazonDiagnosticSupport {
 
     static String tokenDiagnostic(String lwaToken, String sentToken, AmazonProperties properties,
                                   Instant obtainedAt, Instant requestAt) {
-        boolean same = java.util.Objects.equals(lwaToken, sentToken);
         String key = properties == null ? "" : properties.getTokenDiagnosticHmacKey();
         String lwaId = fingerprint(lwaToken, key);
         String sentId = fingerprint(sentToken, key);
         return "lwaTokenNull=" + (lwaToken == null)
                 + " lwaTokenEmpty=" + (lwaToken == null || lwaToken.isBlank())
-                + " lwaTokenLength=" + (lwaToken == null ? 0 : lwaToken.length())
                 + " lwaTokenId=" + lwaId
                 + " spApiTokenNull=" + (sentToken == null)
                 + " spApiTokenEmpty=" + (sentToken == null || sentToken.isBlank())
-                + " spApiTokenLength=" + (sentToken == null ? 0 : sentToken.length())
                 + " spApiTokenId=" + sentId
-                + " tokensEqual=" + same
                 + " lwaObtainedAt=" + (obtainedAt == null ? "unavailable" : obtainedAt)
                 + " spApiRequestAt=" + (requestAt == null ? "unavailable" : requestAt);
     }
@@ -97,6 +89,12 @@ final class AmazonDiagnosticSupport {
 
     private static String replace(String text, String secret) {
         return secret == null || secret.isBlank() ? text : text.replace(secret, "[REDACTED]");
+    }
+
+    private static String safeCode(String code) {
+        if (code == null || code.isBlank()) return "";
+        String safe = code.replaceAll("[^A-Za-z0-9_.-]", "");
+        return safe.isBlank() ? "" : "[" + safe.substring(0, Math.min(safe.length(), 80)) + "]";
     }
 
     private static JsonNode parse(String body, ObjectMapper mapper) {

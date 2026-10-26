@@ -1,8 +1,19 @@
 const BASE_URL = "/api";
 
+async function csrfToken() {
+  const response = await fetch(`${BASE_URL}/auth/csrf`, { credentials: "include" });
+  if (!response.ok) throw new Error("Não foi possível validar a sessão.");
+  return (await response.json()).token;
+}
+
 async function request(path, options = {}) {
   const headers = new Headers(options.headers || {});
   const isFormData = options.body instanceof FormData;
+  const method = (options.method || "GET").toUpperCase();
+
+  if (!["GET", "HEAD", "OPTIONS", "TRACE"].includes(method)) {
+    headers.set("X-CSRF-TOKEN", await csrfToken());
+  }
 
   if (!isFormData && !headers.has("Content-Type")) {
     headers.set("Content-Type", "application/json");
@@ -52,6 +63,8 @@ export const api = {
     }),
 
   buscarUsuarioAtual: () => request("/auth/me"),
+
+  sair: () => request("/auth/logout", { method: "POST" }),
 
   listarMarketplaces: () => request("/retaguarda/marketplaces"),
 

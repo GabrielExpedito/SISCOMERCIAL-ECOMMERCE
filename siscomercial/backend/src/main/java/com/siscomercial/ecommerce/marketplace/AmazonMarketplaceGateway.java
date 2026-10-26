@@ -81,8 +81,8 @@ public class AmazonMarketplaceGateway implements MarketplaceGateway {
                     accessToken, sentToken, properties, tokenObtainedAt, requestAt);
             log.info("Amazon SP-API token diagnostic: {}", tokenDiagnostic);
             HttpResponse<String> response = apiClient.sendSpApi(request);
-            log.info("Amazon SP-API response diagnostic: host={} sellerId={} marketplaceId={} status={} requestId={} {}",
-                    request.uri().getHost(), properties.getSellerId(), properties.getMarketplaceId(),
+            log.info("Amazon SP-API response diagnostic: host={} status={} requestId={} {}",
+                    request.uri().getHost(),
                     response.statusCode(), AmazonDiagnosticSupport.requestId(response), tokenDiagnostic);
 
             JsonNode json = null;
@@ -249,36 +249,10 @@ public class AmazonMarketplaceGateway implements MarketplaceGateway {
     }
 
     private String formatarItemErro(String code, String message, String details) {
-        StringBuilder item = new StringBuilder();
-        if (!code.isBlank()) {
-            item.append("[").append(code).append("]");
-        }
-
-        String principal = message;
-        if (principal.isBlank()) {
-            principal = details;
-            details = "";
-        }
-
-        if (!principal.isBlank()) {
-            if (item.length() > 0) {
-                item.append(" ");
-            }
-            item.append(principal);
-        }
-
-        if (!details.isBlank() && !details.equalsIgnoreCase(principal) && !principal.contains(details)) {
-            if (item.length() > 0) {
-                if (!item.toString().endsWith(".")) {
-                    item.append(".");
-                }
-                item.append(" Detalhes: ").append(details);
-            } else {
-                item.append(details);
-            }
-        }
-
-        return item.toString().trim();
+        if (code == null || code.isBlank()) return "";
+        String safeCode = code.replaceAll("[^A-Za-z0-9_.-]", "");
+        if (safeCode.isBlank()) return "";
+        return "[" + safeCode.substring(0, Math.min(safeCode.length(), 80)) + "]";
     }
 
     private String extrairRequestId(HttpResponse<?> response) {
