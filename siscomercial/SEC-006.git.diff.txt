@@ -1,0 +1,1254 @@
+diff --git a/siscomercial/backend/src/main/java/com/siscomercial/ecommerce/ai/AgenteFerramentas.java b/siscomercial/backend/src/main/java/com/siscomercial/ecommerce/ai/AgenteFerramentas.java
+index b681e37..6c6c98f 100644
+--- a/siscomercial/backend/src/main/java/com/siscomercial/ecommerce/ai/AgenteFerramentas.java
++++ b/siscomercial/backend/src/main/java/com/siscomercial/ecommerce/ai/AgenteFerramentas.java
+@@ -102,7 +102,7 @@ public class AgenteFerramentas {
+         } catch (RecursoNaoEncontradoException e) {
+             return "Nao encontrei nenhum pedido com o numero " + numeroPedido + ". Nada foi alterado.";
+         } catch (RegraNegocioException e) {
+-            return "Nao foi possivel preparar o cancelamento: " + e.getMessage();
++            return "Nao foi possivel preparar o cancelamento devido a uma regra de negocio.";
+         }
+     }
+ 
+@@ -125,7 +125,7 @@ public class AgenteFerramentas {
+         } catch (RecursoNaoEncontradoException e) {
+             return "Nao encontrei nenhum pedido com o numero " + numeroPedido + ". Nada foi alterado.";
+         } catch (RegraNegocioException e) {
+-            return "Nao foi possivel preparar a emissao da nota fiscal: " + e.getMessage();
++            return "Nao foi possivel preparar a emissao da nota fiscal devido a uma regra de negocio.";
+         }
+     }
+ 
+@@ -195,7 +195,7 @@ public class AgenteFerramentas {
+             return "Preparei o cadastro do produto.\n\n" + resumo + "\nPara confirmar o cadastro, peça a confirmação " +
+                     "explícita do administrador " + "e depois chame confirmarOperacao com o token: " + token;
+         } catch (RegraNegocioException e) {
+-            return "Não foi possível preparar o cadastro do produto: " + e.getMessage();
++            return "Não foi possível preparar o cadastro do produto devido a uma regra de negócio.";
+         }
+     }
+ 
+diff --git a/siscomercial/backend/src/main/java/com/siscomercial/ecommerce/ai/AgenteIAConfig.java b/siscomercial/backend/src/main/java/com/siscomercial/ecommerce/ai/AgenteIAConfig.java
+index e099bdd..407b7f7 100644
+--- a/siscomercial/backend/src/main/java/com/siscomercial/ecommerce/ai/AgenteIAConfig.java
++++ b/siscomercial/backend/src/main/java/com/siscomercial/ecommerce/ai/AgenteIAConfig.java
+@@ -2,6 +2,8 @@ package com.siscomercial.ecommerce.ai;
+ 
+ import dev.langchain4j.model.chat.ChatLanguageModel;
+ import dev.langchain4j.model.googleai.GoogleAiGeminiChatModel;
++import org.slf4j.Logger;
++import org.slf4j.LoggerFactory;
+ import org.springframework.beans.factory.annotation.Value;
+ import org.springframework.context.annotation.Bean;
+ import org.springframework.context.annotation.Configuration;
+@@ -10,30 +12,26 @@ import java.time.Duration;
+ 
+ @Configuration
+ public class AgenteIAConfig {
++    private static final Logger log = LoggerFactory.getLogger(AgenteIAConfig.class);
+ 
+     @Bean
+     public ChatLanguageModel chatLanguageModel(
+             @Value("${siscomercial.ia.gemini-api-key:}") String apiKey,
+             @Value("${siscomercial.ia.modelo:gemini-3.5-flash-lite}") String modelo) {
+ 
+-        System.out.println("=== CONFIGURACAO IA ===");
+-        System.out.println("Modelo: " + modelo);
+-        System.out.println("API Key configurada: " +
+-                (apiKey != null && !apiKey.isBlank()));
+-
+         if (apiKey == null || apiKey.isBlank()) {
+-            System.out.println("Modo: STUB");
++            log.info("AI chat model initialized in stub mode.");
+             return new StubChatLanguageModel();
+         }
+ 
+-        System.out.println("Modo: GEMINI");
++        log.info("AI chat model initialized: provider=Gemini, model={}", modelo);
+ 
+         return GoogleAiGeminiChatModel.builder()
+                 .apiKey(apiKey)
+                 .modelName(modelo)
+                 .temperature(0.2)
+                 .timeout(Duration.ofSeconds(60))
+-                .logRequestsAndResponses(true)
++                .logRequestsAndResponses(false)
+                 .build();
+     }
+-}
+\ No newline at end of file
++}
+diff --git a/siscomercial/backend/src/main/java/com/siscomercial/ecommerce/exception/GlobalExceptionHandler.java b/siscomercial/backend/src/main/java/com/siscomercial/ecommerce/exception/GlobalExceptionHandler.java
+index 20b614d..4fc96fa 100644
+--- a/siscomercial/backend/src/main/java/com/siscomercial/ecommerce/exception/GlobalExceptionHandler.java
++++ b/siscomercial/backend/src/main/java/com/siscomercial/ecommerce/exception/GlobalExceptionHandler.java
+@@ -4,10 +4,13 @@ import org.springframework.http.HttpStatus;
+ import org.springframework.http.ResponseEntity;
+ import org.springframework.web.bind.annotation.ExceptionHandler;
+ import org.springframework.web.bind.annotation.RestControllerAdvice;
++import org.slf4j.Logger;
++import org.slf4j.LoggerFactory;
+ import java.util.Map;
+ 
+ @RestControllerAdvice
+ public class GlobalExceptionHandler {
++    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+ 
+     @ExceptionHandler(RegraNegocioException.class)
+     public ResponseEntity<Map<String, String>> handleRegraNegocio(RegraNegocioException ex) {
+@@ -21,6 +24,7 @@ public class GlobalExceptionHandler {
+ 
+     @ExceptionHandler(Exception.class)
+     public ResponseEntity<Map<String, String>> handleGenerico(Exception ex) {
+-        return ResponseEntity.internalServerError().body(Map.of("erro", "Erro interno: " + ex.getMessage()));
++        log.error("Unhandled request exception type={}", ex.getClass().getSimpleName());
++        return ResponseEntity.internalServerError().body(Map.of("erro", "Erro interno. Tente novamente mais tarde."));
+     }
+ }
+diff --git a/siscomercial/backend/src/main/java/com/siscomercial/ecommerce/marketplace/AmazonDiagnosticSupport.java b/siscomercial/backend/src/main/java/com/siscomercial/ecommerce/marketplace/AmazonDiagnosticSupport.java
+index 0ea8ea4..ef88770 100644
+--- a/siscomercial/backend/src/main/java/com/siscomercial/ecommerce/marketplace/AmazonDiagnosticSupport.java
++++ b/siscomercial/backend/src/main/java/com/siscomercial/ecommerce/marketplace/AmazonDiagnosticSupport.java
+@@ -28,17 +28,13 @@ final class AmazonDiagnosticSupport {
+         if (nodes.isArray()) {
+             for (JsonNode node : nodes) {
+                 String code = node.path("code").asText("").trim();
+-                String message = node.path("message").asText("").trim();
+-                String details = node.path("details").asText("").trim();
+-                String item = code.isBlank() ? message : "[" + code + "] " + message;
+-                if (!details.isBlank() && !details.equals(message)) item += " Detalhes: " + details;
++                String item = redact(safeCode(code), properties, accessToken);
+                 if (!item.isBlank()) errors.add(redact(item, properties, accessToken));
+             }
+         }
+         if (errors.isEmpty()) {
+             String code = json.path("error").asText(json.path("code").asText(""));
+-            String message = json.path("error_description").asText(json.path("message").asText(""));
+-            String item = code.isBlank() ? message : "[" + code + "] " + message;
++            String item = redact(safeCode(code), properties, accessToken);
+             if (!item.isBlank()) errors.add(redact(item, properties, accessToken));
+         }
+         String requestId = requestId(response);
+@@ -67,19 +63,15 @@ final class AmazonDiagnosticSupport {
+ 
+     static String tokenDiagnostic(String lwaToken, String sentToken, AmazonProperties properties,
+                                   Instant obtainedAt, Instant requestAt) {
+-        boolean same = java.util.Objects.equals(lwaToken, sentToken);
+         String key = properties == null ? "" : properties.getTokenDiagnosticHmacKey();
+         String lwaId = fingerprint(lwaToken, key);
+         String sentId = fingerprint(sentToken, key);
+         return "lwaTokenNull=" + (lwaToken == null)
+                 + " lwaTokenEmpty=" + (lwaToken == null || lwaToken.isBlank())
+-                + " lwaTokenLength=" + (lwaToken == null ? 0 : lwaToken.length())
+                 + " lwaTokenId=" + lwaId
+                 + " spApiTokenNull=" + (sentToken == null)
+                 + " spApiTokenEmpty=" + (sentToken == null || sentToken.isBlank())
+-                + " spApiTokenLength=" + (sentToken == null ? 0 : sentToken.length())
+                 + " spApiTokenId=" + sentId
+-                + " tokensEqual=" + same
+                 + " lwaObtainedAt=" + (obtainedAt == null ? "unavailable" : obtainedAt)
+                 + " spApiRequestAt=" + (requestAt == null ? "unavailable" : requestAt);
+     }
+@@ -99,6 +91,12 @@ final class AmazonDiagnosticSupport {
+         return secret == null || secret.isBlank() ? text : text.replace(secret, "[REDACTED]");
+     }
+ 
++    private static String safeCode(String code) {
++        if (code == null || code.isBlank()) return "";
++        String safe = code.replaceAll("[^A-Za-z0-9_.-]", "");
++        return safe.isBlank() ? "" : "[" + safe.substring(0, Math.min(safe.length(), 80)) + "]";
++    }
++
+     private static JsonNode parse(String body, ObjectMapper mapper) {
+         if (body == null || body.isBlank()) return mapper.getNodeFactory().nullNode();
+         try { return mapper.readTree(body); } catch (Exception ignored) { return mapper.getNodeFactory().nullNode(); }
+diff --git a/siscomercial/backend/src/main/java/com/siscomercial/ecommerce/marketplace/AmazonMarketplaceGateway.java b/siscomercial/backend/src/main/java/com/siscomercial/ecommerce/marketplace/AmazonMarketplaceGateway.java
+index 671b34c..0d3003d 100644
+--- a/siscomercial/backend/src/main/java/com/siscomercial/ecommerce/marketplace/AmazonMarketplaceGateway.java
++++ b/siscomercial/backend/src/main/java/com/siscomercial/ecommerce/marketplace/AmazonMarketplaceGateway.java
+@@ -81,8 +81,8 @@ public class AmazonMarketplaceGateway implements MarketplaceGateway {
+                     accessToken, sentToken, properties, tokenObtainedAt, requestAt);
+             log.info("Amazon SP-API token diagnostic: {}", tokenDiagnostic);
+             HttpResponse<String> response = apiClient.sendSpApi(request);
+-            log.info("Amazon SP-API response diagnostic: host={} sellerId={} marketplaceId={} status={} requestId={} {}",
+-                    request.uri().getHost(), properties.getSellerId(), properties.getMarketplaceId(),
++            log.info("Amazon SP-API response diagnostic: host={} status={} requestId={} {}",
++                    request.uri().getHost(),
+                     response.statusCode(), AmazonDiagnosticSupport.requestId(response), tokenDiagnostic);
+ 
+             JsonNode json = null;
+@@ -249,36 +249,10 @@ public class AmazonMarketplaceGateway implements MarketplaceGateway {
+     }
+ 
+     private String formatarItemErro(String code, String message, String details) {
+-        StringBuilder item = new StringBuilder();
+-        if (!code.isBlank()) {
+-            item.append("[").append(code).append("]");
+-        }
+-
+-        String principal = message;
+-        if (principal.isBlank()) {
+-            principal = details;
+-            details = "";
+-        }
+-
+-        if (!principal.isBlank()) {
+-            if (item.length() > 0) {
+-                item.append(" ");
+-            }
+-            item.append(principal);
+-        }
+-
+-        if (!details.isBlank() && !details.equalsIgnoreCase(principal) && !principal.contains(details)) {
+-            if (item.length() > 0) {
+-                if (!item.toString().endsWith(".")) {
+-                    item.append(".");
+-                }
+-                item.append(" Detalhes: ").append(details);
+-            } else {
+-                item.append(details);
+-            }
+-        }
+-
+-        return item.toString().trim();
++        if (code == null || code.isBlank()) return "";
++        String safeCode = code.replaceAll("[^A-Za-z0-9_.-]", "");
++        if (safeCode.isBlank()) return "";
++        return "[" + safeCode.substring(0, Math.min(safeCode.length(), 80)) + "]";
+     }
+ 
+     private String extrairRequestId(HttpResponse<?> response) {
+diff --git a/siscomercial/backend/src/main/java/com/siscomercial/ecommerce/marketplace/IntegracaoMarketplaceService.java b/siscomercial/backend/src/main/java/com/siscomercial/ecommerce/marketplace/IntegracaoMarketplaceService.java
+index 947ea02..f6657c9 100644
+--- a/siscomercial/backend/src/main/java/com/siscomercial/ecommerce/marketplace/IntegracaoMarketplaceService.java
++++ b/siscomercial/backend/src/main/java/com/siscomercial/ecommerce/marketplace/IntegracaoMarketplaceService.java
+@@ -11,6 +11,8 @@ import lombok.RequiredArgsConstructor;
+ import org.springframework.beans.factory.annotation.Value;
+ import org.springframework.stereotype.Service;
+ import org.springframework.transaction.annotation.Transactional;
++import org.slf4j.Logger;
++import org.slf4j.LoggerFactory;
+ 
+ import java.net.URI;
+ import java.net.URLEncoder;
+@@ -26,6 +28,7 @@ import java.util.Map;
+ @Service
+ @RequiredArgsConstructor
+ public class IntegracaoMarketplaceService {
++    private static final Logger log = LoggerFactory.getLogger(IntegracaoMarketplaceService.class);
+     private final IntegracaoMarketplaceRepository repository;
+     private final AmazonProperties amazonProperties;
+     private final AmazonAuthenticationService amazonAuthenticationService;
+@@ -93,7 +96,7 @@ public class IntegracaoMarketplaceService {
+             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+             JsonNode token = objectMapper.readTree(response.body());
+             if (response.statusCode() < 200 || response.statusCode() >= 300 || token.path("access_token").asText().isBlank()) {
+-                throw new RegraNegocioException("Mercado Livre recusou a autorizacao: " + token.path("message").asText("erro sem detalhes"));
++                throw new RegraNegocioException("Mercado Livre recusou a autorização (HTTP " + response.statusCode() + ").");
+             }
+             String accessToken = token.path("access_token").asText();
+             JsonNode usuario = consultarUsuario(accessToken);
+@@ -107,7 +110,10 @@ public class IntegracaoMarketplaceService {
+             integracao.setStatus(StatusIntegracaoMarketplace.ATIVA);
+             return repository.save(integracao);
+         } catch (RegraNegocioException e) { throw e;
+-        } catch (Exception e) { throw new RegraNegocioException("Falha ao concluir autorizacao Mercado Livre: " + e.getMessage()); }
++        } catch (Exception e) {
++            log.warn("Mercado Livre OAuth exchange failed; causeType={}", e.getClass().getSimpleName());
++            throw new RegraNegocioException("Falha ao concluir autorização Mercado Livre.");
++        }
+     }
+ 
+     @Transactional
+@@ -199,7 +205,7 @@ public class IntegracaoMarketplaceService {
+             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+             JsonNode token = objectMapper.readTree(response.body());
+             if (response.statusCode() < 200 || response.statusCode() >= 300 || token.path("access_token").asText().isBlank()) {
+-                throw new RegraNegocioException("Shopee recusou a autorizacao: " + token.path("message").asText("erro sem detalhes"));
++                throw new RegraNegocioException("Shopee recusou a autorização (HTTP " + response.statusCode() + ").");
+             }
+             integracao.setTokenProtegido(credencialService.proteger(token.path("access_token").asText()));
+             integracao.setCredenciaisProtegidas(credencialService.proteger(token.path("refresh_token").asText()));
+@@ -213,7 +219,8 @@ public class IntegracaoMarketplaceService {
+         } catch (RegraNegocioException e) {
+             throw e;
+         } catch (Exception e) {
+-            throw new RegraNegocioException("Falha ao concluir autorizacao Shopee: " + e.getMessage());
++            log.warn("Shopee OAuth exchange failed; causeType={}", e.getClass().getSimpleName());
++            throw new RegraNegocioException("Falha ao concluir autorização Shopee.");
+         }
+     }
+ 
+@@ -238,8 +245,8 @@ public class IntegracaoMarketplaceService {
+             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+             JsonNode json = objectMapper.readTree(response.body());
+             if (response.statusCode() < 200 || response.statusCode() >= 300 || !json.path("error").asText("").isBlank()) {
+-                throw new RegraNegocioException("Falha ao diagnosticar a integracao Shopee: "
+-                        + json.path("message").asText(json.path("error").asText("erro sem detalhes")));
++                throw new RegraNegocioException("Falha ao diagnosticar a integração Shopee (HTTP "
++                        + response.statusCode() + ").");
+             }
+             integracao.setUltimaSincronizacao(LocalDateTime.now());
+             if (integracao.getStatus() == StatusIntegracaoMarketplace.ERRO) {
+@@ -249,7 +256,8 @@ public class IntegracaoMarketplaceService {
+         } catch (RegraNegocioException e) {
+             throw e;
+         } catch (Exception e) {
+-            throw new RegraNegocioException("Falha ao diagnosticar a integracao Shopee: " + e.getMessage());
++            log.warn("Shopee integration diagnostic failed; causeType={}", e.getClass().getSimpleName());
++            throw new RegraNegocioException("Falha ao diagnosticar a integração Shopee.");
+         }
+     }
+ 
+@@ -311,7 +319,10 @@ public class IntegracaoMarketplaceService {
+             if (response.statusCode() != 200) throw new RegraNegocioException("Token do Mercado Livre invalido (HTTP " + response.statusCode() + ").");
+             return objectMapper.readTree(response.body());
+         } catch (RegraNegocioException e) { throw e;
+-        } catch (Exception e) { throw new RegraNegocioException("Falha ao consultar conta Mercado Livre: " + e.getMessage()); }
++        } catch (Exception e) {
++            log.warn("Mercado Livre account lookup failed; causeType={}", e.getClass().getSimpleName());
++            throw new RegraNegocioException("Falha ao consultar conta Mercado Livre.");
++        }
+     }
+     private IntegracaoMarketplace buscarShopee(Long id) {
+         IntegracaoMarketplace i = buscar(id);
+diff --git a/siscomercial/backend/src/main/java/com/siscomercial/ecommerce/marketplace/MarketplaceOrchestratorService.java b/siscomercial/backend/src/main/java/com/siscomercial/ecommerce/marketplace/MarketplaceOrchestratorService.java
+index d397466..a08b5fb 100644
+--- a/siscomercial/backend/src/main/java/com/siscomercial/ecommerce/marketplace/MarketplaceOrchestratorService.java
++++ b/siscomercial/backend/src/main/java/com/siscomercial/ecommerce/marketplace/MarketplaceOrchestratorService.java
+@@ -83,10 +83,10 @@ public class MarketplaceOrchestratorService {
+             return publicacaoRepository.save(publicacao);
+         } catch (RuntimeException ex) {
+             publicacao.setUltimaSincronizacao(LocalDateTime.now());
+-            publicacao.setUltimoErro(ex.getMessage());
++            publicacao.setUltimoErro("Falha na comunicação com marketplace.");
+             publicacaoRepository.save(publicacao);
+             registrarHistorico(integracao, "SINCRONIZAR_PUBLICACAO", publicacao.getIdentificadorExterno(),
+-                    StatusHistoricoIntegracaoMarketplace.FALHA, ex.getMessage());
++                    StatusHistoricoIntegracaoMarketplace.FALHA, "Falha na comunicação com marketplace.");
+             throw ex;
+         }
+     }
+@@ -143,11 +143,11 @@ public class MarketplaceOrchestratorService {
+                     StatusHistoricoIntegracaoMarketplace.SUCESSO, null);
+             return atualizada;
+         } catch (RuntimeException ex) {
+-            publicacao.setUltimoErro(ex.getMessage());
++            publicacao.setUltimoErro("Falha na comunicação com marketplace.");
+             publicacao.setUltimaSincronizacao(LocalDateTime.now());
+             publicacaoRepository.save(publicacao);
+             registrarHistorico(integracao, "ENCERRAR_PUBLICACAO", publicacao.getIdentificadorExterno(),
+-                    StatusHistoricoIntegracaoMarketplace.FALHA, ex.getMessage());
++                    StatusHistoricoIntegracaoMarketplace.FALHA, "Falha na comunicação com marketplace.");
+             throw ex;
+         }
+     }
+@@ -197,9 +197,10 @@ public class MarketplaceOrchestratorService {
+             falha.setStatus(StatusPublicacaoMarketplace.ERRO);
+             falha.setQuantidadePublicada(0);
+             falha.setUltimaSincronizacao(LocalDateTime.now());
+-            falha.setUltimoErro(ex.getMessage());
++            falha.setUltimoErro("Falha na comunicação com marketplace.");
+             falha = publicacaoRepository.save(falha);
+-            registrarHistorico(integracao, "PUBLICAR_PRODUTO", null, StatusHistoricoIntegracaoMarketplace.FALHA, ex.getMessage());
++            registrarHistorico(integracao, "PUBLICAR_PRODUTO", null, StatusHistoricoIntegracaoMarketplace.FALHA,
++                    "Falha na comunicação com marketplace.");
+             return falha;
+         }
+     }
+@@ -251,10 +252,10 @@ public class MarketplaceOrchestratorService {
+             falha.setStatus(StatusPublicacaoMarketplace.ERRO);
+             falha.setQuantidadePublicada(0);
+             falha.setUltimaSincronizacao(LocalDateTime.now());
+-            falha.setUltimoErro(ex.getMessage());
++            falha.setUltimoErro("Falha na comunicação com marketplace.");
+             falha = publicacaoRepository.save(falha);
+             registrarHistorico(integracao, "PUBLICAR_PRODUTO", null,
+-                    StatusHistoricoIntegracaoMarketplace.FALHA, ex.getMessage());
++                    StatusHistoricoIntegracaoMarketplace.FALHA, "Falha na comunicação com marketplace.");
+             return falha;
+         }
+ 
+diff --git a/siscomercial/backend/src/main/java/com/siscomercial/ecommerce/marketplace/MarketplaceOrderSyncOrchestratorService.java b/siscomercial/backend/src/main/java/com/siscomercial/ecommerce/marketplace/MarketplaceOrderSyncOrchestratorService.java
+index 1e222b6..a875696 100644
+--- a/siscomercial/backend/src/main/java/com/siscomercial/ecommerce/marketplace/MarketplaceOrderSyncOrchestratorService.java
++++ b/siscomercial/backend/src/main/java/com/siscomercial/ecommerce/marketplace/MarketplaceOrderSyncOrchestratorService.java
+@@ -58,7 +58,7 @@ public class MarketplaceOrderSyncOrchestratorService {
+                         "SINCRONIZAR_PEDIDO",
+                         pedido.identificadorExterno(),
+                         StatusHistoricoIntegracaoMarketplace.FALHA,
+-                        ex.getMessage()
++                        "Falha ao processar pedido importado."
+                 );
+             }
+         }
+diff --git a/siscomercial/backend/src/main/java/com/siscomercial/ecommerce/marketplace/MercadoLivreCategoriaService.java b/siscomercial/backend/src/main/java/com/siscomercial/ecommerce/marketplace/MercadoLivreCategoriaService.java
+index f83f100..2f4b6fb 100644
+--- a/siscomercial/backend/src/main/java/com/siscomercial/ecommerce/marketplace/MercadoLivreCategoriaService.java
++++ b/siscomercial/backend/src/main/java/com/siscomercial/ecommerce/marketplace/MercadoLivreCategoriaService.java
+@@ -6,6 +6,8 @@ import com.siscomercial.ecommerce.exception.RegraNegocioException;
+ import com.siscomercial.ecommerce.model.IntegracaoMarketplace;
+ import com.siscomercial.ecommerce.model.Marketplace;
+ import lombok.RequiredArgsConstructor;
++import org.slf4j.Logger;
++import org.slf4j.LoggerFactory;
+ import org.springframework.stereotype.Service;
+ 
+ import java.net.URI;
+@@ -22,6 +24,7 @@ import java.util.List;
+ @Service
+ @RequiredArgsConstructor
+ public class MercadoLivreCategoriaService {
++    private static final Logger log = LoggerFactory.getLogger(MercadoLivreCategoriaService.class);
+     private static final String SITE_ID = "MLB";
+     private static final String API_BASE = "https://api.mercadolibre.com";
+ 
+@@ -72,7 +75,8 @@ public class MercadoLivreCategoriaService {
+         } catch (RegraNegocioException e) {
+             throw e;
+         } catch (Exception e) {
+-            throw new RegraNegocioException("Falha ao consultar categorias do Mercado Livre: " + e.getMessage());
++            log.warn("Mercado Livre category lookup failed; causeType={}", e.getClass().getSimpleName());
++            throw new RegraNegocioException("Falha ao consultar categorias do Mercado Livre.");
+         }
+     }
+ 
+@@ -105,7 +109,8 @@ public class MercadoLivreCategoriaService {
+         } catch (RegraNegocioException e) {
+             throw e;
+         } catch (Exception e) {
+-            throw new RegraNegocioException("Falha ao consultar atributos da categoria " + categoryId + ": " + e.getMessage());
++            log.warn("Mercado Livre category attributes lookup failed; causeType={}", e.getClass().getSimpleName());
++            throw new RegraNegocioException("Falha ao consultar atributos da categoria.");
+         }
+     }
+ 
+@@ -123,9 +128,8 @@ public class MercadoLivreCategoriaService {
+                 : objectMapper.readTree(response.body());
+ 
+         if (response.statusCode() < 200 || response.statusCode() >= 300) {
+-            String message = json.path("message").asText(json.path("error").asText("erro sem detalhes"));
+-            throw new RegraNegocioException("Mercado Livre recusou a solicitacao para " + operacao
+-                    + " (HTTP " + response.statusCode() + "): " + message);
++            throw new RegraNegocioException("Mercado Livre recusou a solicitação para " + operacao
++                    + " (HTTP " + response.statusCode() + ").");
+         }
+         return json;
+     }
+diff --git a/siscomercial/backend/src/main/java/com/siscomercial/ecommerce/marketplace/MercadoLivreMarketplaceGateway.java b/siscomercial/backend/src/main/java/com/siscomercial/ecommerce/marketplace/MercadoLivreMarketplaceGateway.java
+index df3aecb..16d2dd6 100644
+--- a/siscomercial/backend/src/main/java/com/siscomercial/ecommerce/marketplace/MercadoLivreMarketplaceGateway.java
++++ b/siscomercial/backend/src/main/java/com/siscomercial/ecommerce/marketplace/MercadoLivreMarketplaceGateway.java
+@@ -8,6 +8,8 @@ import com.siscomercial.ecommerce.model.Marketplace;
+ import com.siscomercial.ecommerce.model.Produto;
+ import lombok.RequiredArgsConstructor;
+ import org.springframework.stereotype.Component;
++import org.slf4j.Logger;
++import org.slf4j.LoggerFactory;
+ 
+ import java.math.BigDecimal;
+ import java.io.ByteArrayOutputStream;
+@@ -34,6 +36,7 @@ import java.util.Map;
+ @Component
+ @RequiredArgsConstructor
+ public class MercadoLivreMarketplaceGateway implements MarketplaceGateway {
++    private static final Logger log = LoggerFactory.getLogger(MercadoLivreMarketplaceGateway.class);
+     private static final URI ITEMS_URI = URI.create("https://api.mercadolibre.com/items");
+     private final CredencialMarketplaceService credencialService;
+     private final MercadoLivreCategoriaService categoriaService;
+@@ -90,7 +93,8 @@ public class MercadoLivreMarketplaceGateway implements MarketplaceGateway {
+         } catch (RegraNegocioException e) {
+             throw e;
+         } catch (Exception e) {
+-            throw new RegraNegocioException("Falha ao consultar pedidos do Mercado Livre: " + e.getMessage());
++            log.warn("Mercado Livre order retrieval failed; causeType={}", e.getClass().getSimpleName());
++            throw new RegraNegocioException("Falha ao consultar pedidos do Mercado Livre.");
+         }
+     }
+ 
+@@ -154,7 +158,8 @@ public class MercadoLivreMarketplaceGateway implements MarketplaceGateway {
+         } catch (RegraNegocioException e) {
+             throw e;
+         } catch (Exception e) {
+-            throw new RegraNegocioException("Falha ao publicar no Mercado Livre: " + e.getMessage());
++            log.warn("Mercado Livre publication failed; causeType={}", e.getClass().getSimpleName());
++            throw new RegraNegocioException("Falha ao publicar no Mercado Livre.");
+         }
+     }
+ 
+@@ -178,7 +183,8 @@ public class MercadoLivreMarketplaceGateway implements MarketplaceGateway {
+         } catch (RegraNegocioException e) {
+             throw e;
+         } catch (Exception e) {
+-            throw new RegraNegocioException("Falha ao encerrar o anuncio no Mercado Livre: " + e.getMessage());
++            log.warn("Mercado Livre listing closure failed; causeType={}", e.getClass().getSimpleName());
++            throw new RegraNegocioException("Falha ao encerrar o anúncio no Mercado Livre.");
+         }
+     }
+ 
+@@ -220,7 +226,8 @@ public class MercadoLivreMarketplaceGateway implements MarketplaceGateway {
+         } catch (RegraNegocioException e) {
+             throw e;
+         } catch (Exception e) {
+-            throw new RegraNegocioException("Falha ao sincronizar o anuncio no Mercado Livre: " + e.getMessage());
++            log.warn("Mercado Livre listing sync failed; causeType={}", e.getClass().getSimpleName());
++            throw new RegraNegocioException("Falha ao sincronizar o anúncio no Mercado Livre.");
+         }
+     }
+ 
+@@ -513,29 +520,7 @@ public class MercadoLivreMarketplaceGateway implements MarketplaceGateway {
+     }
+ 
+     private String mensagemErroMercadoLivre(int statusCode, JsonNode json, String operacao) {
+-        String message = json.path("message").asText("");
+-        String error = json.path("error").asText("");
+-        StringBuilder detalhe = new StringBuilder();
+-        if (!message.isBlank()) detalhe.append(message);
+-        if (!error.isBlank() && !error.equals(message)) {
+-            if (detalhe.length() > 0) detalhe.append(" | ");
+-            detalhe.append(error);
+-        }
+-        JsonNode causes = json.path("cause");
+-        if (causes.isArray() && !causes.isEmpty()) {
+-            for (JsonNode cause : causes) {
+-                String causeMessage = cause.path("cause_message").asText(cause.path("message").asText(""));
+-                String causeId = cause.path("cause_id").asText("");
+-                if (!causeMessage.isBlank() || !causeId.isBlank()) {
+-                    if (detalhe.length() > 0) detalhe.append(" | ");
+-                    detalhe.append("causa");
+-                    if (!causeId.isBlank()) detalhe.append(" ").append(causeId);
+-                    if (!causeMessage.isBlank()) detalhe.append(": ").append(causeMessage);
+-                }
+-            }
+-        }
+-        if (detalhe.length() == 0) detalhe.append("erro sem detalhes");
+-        return "Mercado Livre recusou a solicitacao para " + operacao + " (HTTP " + statusCode + "): " + detalhe;
++        return "Mercado Livre recusou a solicitação para " + operacao + " (HTTP " + statusCode + ").";
+     }
+ 
+     private boolean urlValida(String url) {
+diff --git a/siscomercial/backend/src/main/java/com/siscomercial/ecommerce/marketplace/ShopeeMarketplaceGateway.java b/siscomercial/backend/src/main/java/com/siscomercial/ecommerce/marketplace/ShopeeMarketplaceGateway.java
+index b8d3664..35298ce 100644
+--- a/siscomercial/backend/src/main/java/com/siscomercial/ecommerce/marketplace/ShopeeMarketplaceGateway.java
++++ b/siscomercial/backend/src/main/java/com/siscomercial/ecommerce/marketplace/ShopeeMarketplaceGateway.java
+@@ -9,6 +9,8 @@ import com.siscomercial.ecommerce.model.Produto;
+ import org.springframework.beans.factory.annotation.Autowired;
+ import org.springframework.beans.factory.annotation.Value;
+ import org.springframework.stereotype.Component;
++import org.slf4j.Logger;
++import org.slf4j.LoggerFactory;
+ 
+ import javax.crypto.Mac;
+ import javax.crypto.spec.SecretKeySpec;
+@@ -32,6 +34,7 @@ import java.util.Map;
+  */
+ @Component
+ public class ShopeeMarketplaceGateway implements MarketplaceGateway {
++    private static final Logger log = LoggerFactory.getLogger(ShopeeMarketplaceGateway.class);
+     private static final String BASE_URL = "https://partner.shopeemobile.com";
+     private static final String PRODUCT_PATH = "/api/v2/product/add_item";
+     private static final String UPDATE_ITEM_PATH = "/api/v2/product/update_item";
+@@ -111,7 +114,8 @@ public class ShopeeMarketplaceGateway implements MarketplaceGateway {
+         } catch (RegraNegocioException e) {
+             throw e;
+         } catch (Exception e) {
+-            throw new RegraNegocioException("Falha ao publicar na Shopee: " + e.getMessage());
++            log.warn("Shopee publication failed; causeType={}", e.getClass().getSimpleName());
++            throw new RegraNegocioException("Falha ao publicar na Shopee.");
+         }
+     }
+ 
+@@ -130,7 +134,8 @@ public class ShopeeMarketplaceGateway implements MarketplaceGateway {
+         } catch (RegraNegocioException e) {
+             throw e;
+         } catch (Exception e) {
+-            throw new RegraNegocioException("Falha ao encerrar a publicacao na Shopee: " + e.getMessage());
++            log.warn("Shopee listing closure failed; causeType={}", e.getClass().getSimpleName());
++            throw new RegraNegocioException("Falha ao encerrar a publicação na Shopee.");
+         }
+     }
+ 
+@@ -158,7 +163,8 @@ public class ShopeeMarketplaceGateway implements MarketplaceGateway {
+         } catch (RegraNegocioException e) {
+             throw e;
+         } catch (Exception e) {
+-            throw new RegraNegocioException("Falha ao sincronizar a publicacao na Shopee: " + e.getMessage());
++            log.warn("Shopee listing sync failed; causeType={}", e.getClass().getSimpleName());
++            throw new RegraNegocioException("Falha ao sincronizar a publicação na Shopee.");
+         }
+     }
+ 
+@@ -280,13 +286,11 @@ public class ShopeeMarketplaceGateway implements MarketplaceGateway {
+         JsonNode json = response.body() == null || response.body().isBlank()
+                 ? objectMapper.createObjectNode() : objectMapper.readTree(response.body());
+         if (response.statusCode() < 200 || response.statusCode() >= 300) {
+-            throw new RegraNegocioException("Falha ao " + operacao + " (HTTP " + response.statusCode() + "): "
+-                    + json.path("message").asText(json.path("error").asText("erro sem detalhes")));
++            throw new RegraNegocioException("Falha ao " + operacao + " (HTTP " + response.statusCode() + ").");
+         }
+         String error = json.path("error").asText("");
+         if (!error.isBlank()) {
+-            throw new RegraNegocioException("Shopee recusou a operacao: " + error + " - "
+-                    + json.path("message").asText("sem detalhes"));
++            throw new RegraNegocioException("Shopee recusou a operação.");
+         }
+         return json;
+     }
+diff --git a/siscomercial/backend/src/main/java/com/siscomercial/ecommerce/model/Cliente.java b/siscomercial/backend/src/main/java/com/siscomercial/ecommerce/model/Cliente.java
+index c56f075..b3741e4 100644
+--- a/siscomercial/backend/src/main/java/com/siscomercial/ecommerce/model/Cliente.java
++++ b/siscomercial/backend/src/main/java/com/siscomercial/ecommerce/model/Cliente.java
+@@ -3,6 +3,7 @@ package com.siscomercial.ecommerce.model;
+ import com.fasterxml.jackson.annotation.JsonIgnore;
+ import jakarta.persistence.*;
+ import lombok.Data;
++import lombok.ToString;
+ import java.time.LocalDateTime;
+ import java.util.ArrayList;
+ import java.util.List;
+@@ -18,27 +19,35 @@ public class Cliente {
+     private Long id;
+ 
+     @Column(name = "nome_razao_social", nullable = false)
++    @ToString.Exclude
+     private String nomeRazaoSocial;
+ 
+     @Column(name = "cpf_cnpj", unique = true)
++    @ToString.Exclude
+     private String cpfCnpj;
+ 
+     @Column(nullable = false, unique = true)
++    @ToString.Exclude
+     private String email;
+ 
++    @ToString.Exclude
+     private String telefone;
+ 
+     @Column(name = "senha_hash")
+     @JsonIgnore
++    @ToString.Exclude
+     private String senhaHash;
+ 
+     @Column(name = "google_id", unique = true)
++    @ToString.Exclude
+     private String googleId;
+ 
+     @Column(name = "nome_fantasia")
++    @ToString.Exclude
+     private String nomeFantasia;
+ 
+     @Column(name = "inscricao_estadual")
++    @ToString.Exclude
+     private String inscricaoEstadual;
+ 
+     @Column(name = "data_cadastro")
+@@ -48,6 +57,7 @@ public class Cliente {
+     private String status = "ATIVO";
+ 
+     @OneToMany(mappedBy = "cliente", cascade = CascadeType.ALL, orphanRemoval = true)
++    @ToString.Exclude
+     private List<Endereco> enderecos = new ArrayList<>();
+ 
+     @Enumerated(EnumType.STRING)
+diff --git a/siscomercial/backend/src/main/java/com/siscomercial/ecommerce/model/Endereco.java b/siscomercial/backend/src/main/java/com/siscomercial/ecommerce/model/Endereco.java
+index 4e6e9f9..93932ca 100644
+--- a/siscomercial/backend/src/main/java/com/siscomercial/ecommerce/model/Endereco.java
++++ b/siscomercial/backend/src/main/java/com/siscomercial/ecommerce/model/Endereco.java
+@@ -21,14 +21,21 @@ public class Endereco {
+     @ToString.Exclude
+     private Cliente cliente;
+ 
++    @ToString.Exclude
+     @Column(nullable = false)
+     private String cep;
+ 
++    @ToString.Exclude
+     private String logradouro;
++    @ToString.Exclude
+     private String numero;
++    @ToString.Exclude
+     private String complemento;
++    @ToString.Exclude
+     private String bairro;
++    @ToString.Exclude
+     private String cidade;
++    @ToString.Exclude
+     private String estado;
+ 
+     @Column(name = "principal")
+diff --git a/siscomercial/backend/src/main/java/com/siscomercial/ecommerce/model/HistoricoIntegracaoMarketplace.java b/siscomercial/backend/src/main/java/com/siscomercial/ecommerce/model/HistoricoIntegracaoMarketplace.java
+index b3040e1..d8af890 100644
+--- a/siscomercial/backend/src/main/java/com/siscomercial/ecommerce/model/HistoricoIntegracaoMarketplace.java
++++ b/siscomercial/backend/src/main/java/com/siscomercial/ecommerce/model/HistoricoIntegracaoMarketplace.java
+@@ -2,6 +2,7 @@ package com.siscomercial.ecommerce.model;
+ 
+ import jakarta.persistence.*;
+ import lombok.Data;
++import lombok.ToString;
+ import java.time.LocalDateTime;
+ 
+ /** Registro tecnico resumido e reprocessavel de operacoes externas. */
+@@ -15,10 +16,12 @@ public class HistoricoIntegracaoMarketplace {
+     @JoinColumn(name = "integracao_id", nullable = false)
+     private IntegracaoMarketplace integracao;
+     @Column(nullable = false) private String operacao;
++    @ToString.Exclude
+     @Column(name = "referencia_externa") private String referenciaExterna;
+     @Enumerated(EnumType.STRING) @Column(nullable = false, length = 40)
+     private StatusHistoricoIntegracaoMarketplace status;
+     @Column(name = "data_hora", nullable = false) private LocalDateTime dataHora = LocalDateTime.now();
++    @ToString.Exclude
+     @Column(name = "mensagem_tecnica", columnDefinition = "TEXT") private String mensagemTecnica;
+     @Column(nullable = false) private Integer tentativa = 1;
+ }
+diff --git a/siscomercial/backend/src/main/java/com/siscomercial/ecommerce/model/IntegracaoMarketplace.java b/siscomercial/backend/src/main/java/com/siscomercial/ecommerce/model/IntegracaoMarketplace.java
+index 945987e..a156232 100644
+--- a/siscomercial/backend/src/main/java/com/siscomercial/ecommerce/model/IntegracaoMarketplace.java
++++ b/siscomercial/backend/src/main/java/com/siscomercial/ecommerce/model/IntegracaoMarketplace.java
+@@ -3,6 +3,7 @@ package com.siscomercial.ecommerce.model;
+ import com.fasterxml.jackson.annotation.JsonIgnore;
+ import jakarta.persistence.*;
+ import lombok.Data;
++import lombok.ToString;
+ 
+ import java.time.LocalDateTime;
+ 
+@@ -31,10 +32,12 @@ public class IntegracaoMarketplace {
+     private String identificadorExterno;
+ 
+     @JsonIgnore
++    @ToString.Exclude
+     @Column(name = "credenciais_protegidas", columnDefinition = "TEXT")
+     private String credenciaisProtegidas;
+ 
+     @JsonIgnore
++    @ToString.Exclude
+     @Column(name = "token_protegido", columnDefinition = "TEXT")
+     private String tokenProtegido;
+ 
+@@ -42,6 +45,7 @@ public class IntegracaoMarketplace {
+     private LocalDateTime tokenExpiraEm;
+ 
+     @JsonIgnore
++    @ToString.Exclude
+     @Column(name = "oauth_state")
+     private String oauthState;
+ 
+diff --git a/siscomercial/backend/src/main/java/com/siscomercial/ecommerce/model/Pagamento.java b/siscomercial/backend/src/main/java/com/siscomercial/ecommerce/model/Pagamento.java
+index dca65ce..ba01d8d 100644
+--- a/siscomercial/backend/src/main/java/com/siscomercial/ecommerce/model/Pagamento.java
++++ b/siscomercial/backend/src/main/java/com/siscomercial/ecommerce/model/Pagamento.java
+@@ -31,6 +31,7 @@ public class Pagamento {
+     private BigDecimal valor;
+ 
+     @Column(name = "identificador_transacao")
++    @ToString.Exclude
+     private String identificadorTransacao;
+ 
+     @Enumerated(EnumType.STRING)
+diff --git a/siscomercial/backend/src/main/java/com/siscomercial/ecommerce/model/Pedido.java b/siscomercial/backend/src/main/java/com/siscomercial/ecommerce/model/Pedido.java
+index e007a03..384a415 100644
+--- a/siscomercial/backend/src/main/java/com/siscomercial/ecommerce/model/Pedido.java
++++ b/siscomercial/backend/src/main/java/com/siscomercial/ecommerce/model/Pedido.java
+@@ -2,6 +2,7 @@ package com.siscomercial.ecommerce.model;
+ 
+ import jakarta.persistence.*;
+ import lombok.Data;
++import lombok.ToString;
+ import java.math.BigDecimal;
+ import java.time.LocalDateTime;
+ import java.util.ArrayList;
+@@ -23,6 +24,7 @@ public class Pedido {
+ 
+     /** Numero publico do pedido, ex: SIS-2026-000001 (secao 7.9). */
+     @Column(name = "numero_pedido", nullable = false, unique = true)
++    @ToString.Exclude
+     private String numeroPedido;
+ 
+     @Column(name = "data_hora", nullable = false)
+@@ -30,6 +32,7 @@ public class Pedido {
+ 
+     @ManyToOne
+     @JoinColumn(name = "cliente_id", nullable = false)
++    @ToString.Exclude
+     private Cliente cliente;
+ 
+     @Enumerated(EnumType.STRING)
+@@ -49,13 +52,13 @@ public class Pedido {
+     private BigDecimal total = BigDecimal.ZERO;
+ 
+     // Snapshot do endereco de entrega no momento da compra (RN025)
+-    private String enderecoCep;
+-    private String enderecoLogradouro;
+-    private String enderecoNumero;
+-    private String enderecoComplemento;
+-    private String enderecoBairro;
+-    private String enderecoCidade;
+-    private String enderecoEstado;
++    @ToString.Exclude private String enderecoCep;
++    @ToString.Exclude private String enderecoLogradouro;
++    @ToString.Exclude private String enderecoNumero;
++    @ToString.Exclude private String enderecoComplemento;
++    @ToString.Exclude private String enderecoBairro;
++    @ToString.Exclude private String enderecoCidade;
++    @ToString.Exclude private String enderecoEstado;
+ 
+     @Column(name = "modalidade_frete")
+     private String modalidadeFrete;
+@@ -64,21 +67,26 @@ public class Pedido {
+     private Integer prazoEstimadoDias;
+ 
+     @Column(name = "codigo_rastreamento")
++    @ToString.Exclude
+     private String codigoRastreamento;
+ 
+     @Column(name = "reserva_expira_em")
+     private LocalDateTime reservaExpiraEm;
+ 
+     @Column(name = "numero_nota_fiscal")
++    @ToString.Exclude
+     private String numeroNotaFiscal;
+ 
+     @Column(name = "chave_nota_fiscal")
++    @ToString.Exclude
+     private String chaveNotaFiscal;
+ 
+     @OneToMany(mappedBy = "pedido", cascade = CascadeType.ALL, orphanRemoval = true)
++    @ToString.Exclude
+     private List<ItemPedido> itens = new ArrayList<>();
+ 
+     @OneToOne(mappedBy = "pedido", cascade = CascadeType.ALL, orphanRemoval = true)
++    @ToString.Exclude
+     private Pagamento pagamento;
+ 
+     /** RN024: define quais status ainda permitem alteracao/cancelamento livre. */
+diff --git a/siscomercial/backend/src/main/java/com/siscomercial/ecommerce/service/ImagemProdutoService.java b/siscomercial/backend/src/main/java/com/siscomercial/ecommerce/service/ImagemProdutoService.java
+index 648b761..e67055e 100644
+--- a/siscomercial/backend/src/main/java/com/siscomercial/ecommerce/service/ImagemProdutoService.java
++++ b/siscomercial/backend/src/main/java/com/siscomercial/ecommerce/service/ImagemProdutoService.java
+@@ -141,8 +141,7 @@ public class ImagemProdutoService {
+         } catch (IOException e) {
+ 
+             throw new RegraNegocioException(
+-                    "Nao foi possivel armazenar a imagem: "
+-                            + e.getMessage()
++                    "Nao foi possivel armazenar a imagem."
+             );
+         }
+     }
+@@ -455,4 +454,4 @@ public class ImagemProdutoService {
+             boolean principal
+     ) {
+     }
+-}
+\ No newline at end of file
++}
+diff --git a/siscomercial/backend/src/main/resources/application.yml b/siscomercial/backend/src/main/resources/application.yml
+index 98cf9d5..59e44b5 100644
+--- a/siscomercial/backend/src/main/resources/application.yml
++++ b/siscomercial/backend/src/main/resources/application.yml
+@@ -2,9 +2,6 @@ spring:
+   application:
+     name: siscomercial-ecommerce
+ 
+-  profiles:
+-    active: local
+-
+   servlet:
+     multipart:
+       max-file-size: 10MB
+@@ -19,7 +16,7 @@ spring:
+   jpa:
+     hibernate:
+       ddl-auto: validate
+-    show-sql: true
++    show-sql: false
+     properties:
+       hibernate:
+         format_sql: true
+@@ -41,6 +38,23 @@ spring:
+               - profile
+               - email
+ 
++logging:
++  level:
++    root: INFO
++
++server:
++  servlet:
++    session:
++      timeout: 30m
++      cookie:
++        name: JSESSIONID
++        http-only: true
++        secure: ${SESSION_COOKIE_SECURE:true}
++        same-site: lax
++
++siscomercial:
++  frontend-url: ${FRONTEND_URL:http://localhost:5173}
++
+ ---
+ siscomercial:
+   marketplace:
+diff --git a/siscomercial/backend/src/test/java/com/siscomercial/ecommerce/marketplace/AmazonAuthenticationServiceTest.java b/siscomercial/backend/src/test/java/com/siscomercial/ecommerce/marketplace/AmazonAuthenticationServiceTest.java
+index 10fee10..da68911 100644
+--- a/siscomercial/backend/src/test/java/com/siscomercial/ecommerce/marketplace/AmazonAuthenticationServiceTest.java
++++ b/siscomercial/backend/src/test/java/com/siscomercial/ecommerce/marketplace/AmazonAuthenticationServiceTest.java
+@@ -3,7 +3,11 @@ package com.siscomercial.ecommerce.marketplace;
+ import com.fasterxml.jackson.databind.ObjectMapper;
+ import com.siscomercial.ecommerce.config.AmazonProperties;
+ import com.siscomercial.ecommerce.exception.RegraNegocioException;
++import ch.qos.logback.classic.Logger;
++import ch.qos.logback.classic.spi.ILoggingEvent;
++import ch.qos.logback.core.read.ListAppender;
+ import org.junit.jupiter.api.Test;
++import org.slf4j.LoggerFactory;
+ 
+ import java.net.http.HttpResponse;
+ 
+@@ -73,7 +77,7 @@ class AmazonAuthenticationServiceTest {
+         @SuppressWarnings("unchecked")
+         HttpResponse<String> unauthorized = mock(HttpResponse.class);
+         when(unauthorized.statusCode()).thenReturn(401);
+-        when(unauthorized.body()).thenReturn("{\"error\":\"invalid_grant\",\"error_description\":\"client-secret-test refresh-token-test\"}");
++        when(unauthorized.body()).thenReturn("{\"error\":\"invalid_grant\",\"error_description\":\"client-secret-test refresh-token-test email-falso@example.test\"}");
+         when(unauthorized.headers()).thenReturn(java.net.http.HttpHeaders.of(
+                 java.util.Map.of("x-amzn-RequestId", java.util.List.of("lwa-request-123")), (k, v) -> true));
+         when(client.postForm(anyString(), anyMap())).thenReturn(unauthorized);
+@@ -82,6 +86,7 @@ class AmazonAuthenticationServiceTest {
+                 () -> new AmazonAuthenticationService(properties, client, new ObjectMapper()).obterAccessToken());
+         assertFalse(authError.getMessage().contains("client-secret-test"));
+         assertFalse(authError.getMessage().contains("refresh-token-test"));
++        assertFalse(authError.getMessage().contains("email-falso@example.test"));
+         assertTrue(authError.getMessage().contains("LWA_AUTH"));
+         assertTrue(authError.getMessage().contains("invalid_grant"));
+         assertTrue(authError.getMessage().contains("Request ID: lwa-request-123"));
+@@ -103,6 +108,37 @@ class AmazonAuthenticationServiceTest {
+         verifyNoInteractions(client);
+     }
+ 
++    @Test
++    void logDeFalhaLwaOmiteCredenciaisETrechosDaResposta() throws Exception {
++        AmazonProperties properties = configurada();
++        AmazonApiClient client = mock(AmazonApiClient.class);
++        @SuppressWarnings("unchecked")
++        HttpResponse<String> response = mock(HttpResponse.class);
++        when(response.statusCode()).thenReturn(401);
++        when(response.body()).thenReturn("{\"error\":\"invalid_grant\",\"error_description\":"
++                + "\"client-secret-test refresh-token-test email-falso@example.test\"}");
++        when(client.postForm(anyString(), anyMap())).thenReturn(response);
++
++        Logger logger = (Logger) LoggerFactory.getLogger(AmazonAuthenticationService.class);
++        ListAppender<ILoggingEvent> appender = new ListAppender<>();
++        appender.start();
++        logger.addAppender(appender);
++        try {
++            assertThrows(RegraNegocioException.class,
++                    () -> new AmazonAuthenticationService(properties, client, new ObjectMapper()).obterAccessToken());
++        } finally {
++            logger.detachAppender(appender);
++            appender.stop();
++        }
++
++        String logged = appender.list.stream().map(ILoggingEvent::getFormattedMessage)
++                .collect(java.util.stream.Collectors.joining("\n"));
++        assertTrue(logged.contains("invalid_grant"));
++        assertFalse(logged.contains("client-secret-test"));
++        assertFalse(logged.contains("refresh-token-test"));
++        assertFalse(logged.contains("email-falso@example.test"));
++    }
++
+     @Test
+     void falhaDeRedeLwaPreservaCausaOriginalSemExibirCredenciais() throws Exception {
+         AmazonApiClient client = mock(AmazonApiClient.class);
+diff --git a/siscomercial/backend/src/test/java/com/siscomercial/ecommerce/marketplace/AmazonDiagnosticSupportTest.java b/siscomercial/backend/src/test/java/com/siscomercial/ecommerce/marketplace/AmazonDiagnosticSupportTest.java
+index eb23c06..fb5874a 100644
+--- a/siscomercial/backend/src/test/java/com/siscomercial/ecommerce/marketplace/AmazonDiagnosticSupportTest.java
++++ b/siscomercial/backend/src/test/java/com/siscomercial/ecommerce/marketplace/AmazonDiagnosticSupportTest.java
+@@ -18,10 +18,10 @@ class AmazonDiagnosticSupportTest {
+ 
+         assertTrue(nullo.contains("lwaTokenNull=true"));
+         assertTrue(nullo.contains("lwaTokenEmpty=true"));
+-        assertTrue(nullo.contains("tokensEqual=true"));
+-        assertTrue(vazio.contains("lwaTokenLength=0"));
+         assertTrue(vazio.contains("spApiTokenEmpty=true"));
+         assertTrue(nullo.contains("lwaTokenId=unavailable"));
++        assertFalse(nullo.contains("TokenLength"));
++        assertFalse(nullo.contains("tokensEqual"));
+         assertFalse(nullo.contains(token));
+         assertFalse(vazio.contains(token));
+     }
+@@ -36,7 +36,6 @@ class AmazonDiagnosticSupportTest {
+         String diagnostic = AmazonDiagnosticSupport.tokenDiagnostic(
+                 "private-token-value", "private-token-value", properties, obtainedAt, requestAt);
+ 
+-        assertTrue(diagnostic.contains("tokensEqual=true"));
+         String lwaId = field(diagnostic, "lwaTokenId");
+         String spApiId = field(diagnostic, "spApiTokenId");
+         assertEquals(lwaId, spApiId);
+@@ -55,7 +54,6 @@ class AmazonDiagnosticSupportTest {
+         String diagnostic = AmazonDiagnosticSupport.tokenDiagnostic(
+                 "lwa-token-value", "header-token-value", properties, Instant.now(), Instant.now());
+ 
+-        assertTrue(diagnostic.contains("tokensEqual=false"));
+         assertNotEquals(field(diagnostic, "lwaTokenId"), field(diagnostic, "spApiTokenId"));
+         assertFalse(diagnostic.contains("lwa-token-value"));
+         assertFalse(diagnostic.contains("header-token-value"));
+diff --git a/siscomercial/backend/src/test/java/com/siscomercial/ecommerce/marketplace/AmazonMarketplaceGatewayTest.java b/siscomercial/backend/src/test/java/com/siscomercial/ecommerce/marketplace/AmazonMarketplaceGatewayTest.java
+index c1df871..4da6c89 100644
+--- a/siscomercial/backend/src/test/java/com/siscomercial/ecommerce/marketplace/AmazonMarketplaceGatewayTest.java
++++ b/siscomercial/backend/src/test/java/com/siscomercial/ecommerce/marketplace/AmazonMarketplaceGatewayTest.java
+@@ -79,7 +79,7 @@ class AmazonMarketplaceGatewayTest {
+         @SuppressWarnings("unchecked") HttpResponse<String> response = mock(HttpResponse.class);
+         doReturn(response).when(client).sendSpApi(any());
+         when(response.statusCode()).thenReturn(403);
+-        when(response.body()).thenReturn("{\"errors\":[{\"code\":\"Unauthorized\",\"message\":\"denied access-token-value client-secret-value refresh-token-value\"}]}");
++        when(response.body()).thenReturn("{\"errors\":[{\"code\":\"Unauthorized\",\"message\":\"denied access-token-value client-secret-value refresh-token-value email-falso@example.test\"}]}");
+ 
+         RegraNegocioException ex = assertThrows(RegraNegocioException.class, () -> gateway.publicar(null, produto));
+ 
+@@ -91,6 +91,7 @@ class AmazonMarketplaceGatewayTest {
+         assertFalse(ex.getMessage().contains("access-token-value"));
+         assertFalse(ex.getMessage().contains("client-secret-value"));
+         assertFalse(ex.getMessage().contains("refresh-token-value"));
++        assertFalse(ex.getMessage().contains("email-falso@example.test"));
+     }
+ 
+     @Test
+@@ -177,8 +178,10 @@ class AmazonMarketplaceGatewayTest {
+         assertThrows(RegraNegocioException.class, () -> gateway.publicar(null, produto()));
+         when(response.statusCode()).thenReturn(202);
+         when(response.body()).thenReturn("{\"status\":\"INVALID\",\"issues\":[{\"message\":\"invalid listing\"}]}");
+-        assertTrue(assertThrows(RegraNegocioException.class, () -> gateway.publicar(null, produto()))
+-                .getMessage().contains("invalid listing"));
++        RegraNegocioException rejected = assertThrows(RegraNegocioException.class,
++                () -> gateway.publicar(null, produto()));
++        assertFalse(rejected.getMessage().contains("invalid listing"));
++        assertTrue(rejected.getMessage().contains("não aceitou"));
+         when(response.body()).thenReturn("{}");
+         assertTrue(assertThrows(RegraNegocioException.class, () -> gateway.publicar(null, produto()))
+                 .getMessage().contains("incompleta"));
+@@ -211,7 +214,7 @@ class AmazonMarketplaceGatewayTest {
+         RegraNegocioException ex = assertThrows(RegraNegocioException.class, () -> gateway.publicar(null, produto()));
+         assertTrue(ex.getMessage().contains("HTTP 403"));
+         assertTrue(ex.getMessage().contains("Unauthorized"));
+-        assertTrue(ex.getMessage().contains("Access to requested resource is denied."));
++        assertFalse(ex.getMessage().contains("Access to requested resource is denied."));
+     }
+ 
+     @Test
+@@ -235,7 +238,7 @@ class AmazonMarketplaceGatewayTest {
+         assertTrue(ex.getMessage().contains("HTTP 403"));
+         assertTrue(ex.getMessage().contains("SP_API_VALIDATION"));
+         assertTrue(ex.getMessage().contains("90000"));
+-        assertTrue(ex.getMessage().contains("The merchant_suggested_asin provided does not exist."));
++        assertFalse(ex.getMessage().contains("The merchant_suggested_asin provided does not exist."));
+     }
+ 
+     @Test
+@@ -313,7 +316,7 @@ class AmazonMarketplaceGatewayTest {
+ 
+         assertTrue(ex.getMessage().contains("HTTP 403"));
+         assertTrue(ex.getMessage().contains("SP_API_AUTHORIZATION"));
+-        assertTrue(ex.getMessage().contains("revoked, malformed or invalid"));
++        assertFalse(ex.getMessage().contains("revoked, malformed or invalid"));
+         assertTrue(ex.getMessage().contains("Request ID: 9f16552e-feb6-4664-a5b7-8085bcf4975c"));
+     }
+ 
+@@ -356,10 +359,10 @@ class AmazonMarketplaceGatewayTest {
+         RegraNegocioException ex = assertThrows(RegraNegocioException.class, () -> gateway.publicar(null, produto()));
+         assertTrue(ex.getMessage().contains("HTTP 400"));
+         assertTrue(ex.getMessage().contains("InvalidInput"));
+-        assertTrue(ex.getMessage().contains("SKU informado é inválido."));
++        assertFalse(ex.getMessage().contains("SKU informado é inválido."));
+         assertTrue(ex.getMessage().contains("QuotaExceeded"));
+-        assertTrue(ex.getMessage().contains("Limite de chamadas atingido."));
+-        assertTrue(ex.getMessage().contains("Aguarde 60 segundos"));
++        assertFalse(ex.getMessage().contains("Limite de chamadas atingido."));
++        assertFalse(ex.getMessage().contains("Aguarde 60 segundos"));
+         assertTrue(ex.getMessage().contains(";"));
+     }
+ 
+@@ -387,8 +390,8 @@ class AmazonMarketplaceGatewayTest {
+ 
+         RegraNegocioException ex = assertThrows(RegraNegocioException.class, () -> gateway.publicar(null, produto()));
+         String msg = ex.getMessage();
+-        int ocorrencias = (msg.length() - msg.replace("Acesso não permitido", "").length()) / "Acesso não permitido".length();
+-        assertEquals(1, ocorrencias, "Não deve duplicar a mensagem idêntica");
++        assertFalse(msg.contains("Acesso não permitido"), "A mensagem do provedor não deve ser exposta");
++        assertTrue(msg.contains("AccessDenied"));
+     }
+ 
+     private Produto produto() {
+diff --git a/siscomercial/backend/src/test/java/com/siscomercial/ecommerce/marketplace/MarketplaceOrchestratorServiceTest.java b/siscomercial/backend/src/test/java/com/siscomercial/ecommerce/marketplace/MarketplaceOrchestratorServiceTest.java
+index eeeb799..7f6a3df 100644
+--- a/siscomercial/backend/src/test/java/com/siscomercial/ecommerce/marketplace/MarketplaceOrchestratorServiceTest.java
++++ b/siscomercial/backend/src/test/java/com/siscomercial/ecommerce/marketplace/MarketplaceOrchestratorServiceTest.java
+@@ -166,7 +166,7 @@ class MarketplaceOrchestratorServiceTest {
+ 
+         assertEquals(2, resultado.size());
+         assertEquals(StatusPublicacaoMarketplace.ERRO, resultado.get(0).getStatus());
+-        assertEquals("Falha ML", resultado.get(0).getUltimoErro());
++        assertEquals("Falha na comunicação com marketplace.", resultado.get(0).getUltimoErro());
+         assertEquals(StatusPublicacaoMarketplace.PUBLICADA, resultado.get(1).getStatus());
+         assertEquals("SHOP-2", resultado.get(1).getIdentificadorExterno());
+         verify(gatewayMl).publicar(ml, produto);
+@@ -189,7 +189,7 @@ class MarketplaceOrchestratorServiceTest {
+         assertEquals(StatusPublicacaoMarketplace.PUBLICADA, resultado.get(0).getStatus());
+         assertEquals("MLB-1", resultado.get(0).getIdentificadorExterno());
+         assertEquals(StatusPublicacaoMarketplace.ERRO, resultado.get(1).getStatus());
+-        assertEquals("Falha Shopee", resultado.get(1).getUltimoErro());
++        assertEquals("Falha na comunicação com marketplace.", resultado.get(1).getUltimoErro());
+         verify(gatewayMl).publicar(ml, produto);
+         verify(gatewayShopee).publicar(shopee, produto);
+     }
+@@ -209,7 +209,7 @@ class MarketplaceOrchestratorServiceTest {
+         List<PublicacaoMarketplace> resultado = service.publicarMulticanal(3L);
+ 
+         assertEquals(StatusPublicacaoMarketplace.ERRO, resultado.get(0).getStatus());
+-        assertEquals("Falha Amazon", resultado.get(0).getUltimoErro());
++        assertEquals("Falha na comunicação com marketplace.", resultado.get(0).getUltimoErro());
+         assertEquals(StatusPublicacaoMarketplace.PUBLICADA, resultado.get(1).getStatus());
+         assertEquals("MLB-OK", resultado.get(1).getIdentificadorExterno());
+         assertEquals(StatusPublicacaoMarketplace.PUBLICADA, resultado.get(2).getStatus());
+diff --git a/siscomercial/frontend/src/context/AuthContext.jsx b/siscomercial/frontend/src/context/AuthContext.jsx
+index a69c144..ffc7208 100644
+--- a/siscomercial/frontend/src/context/AuthContext.jsx
++++ b/siscomercial/frontend/src/context/AuthContext.jsx
+@@ -15,12 +15,8 @@ export function AuthProvider({ children }) {
+     try {
+       const usuarioAtual = await api.buscarUsuarioAtual();
+ 
+-      console.log("USUARIO AUTENTICADO:", usuarioAtual);
+-
+       setUsuario(usuarioAtual);
+     } catch (error) {
+-      console.log("Nenhum usuário autenticado.");
+-
+       setUsuario(null);
+     } finally {
+       setCarregando(false);
+@@ -28,11 +24,13 @@ export function AuthProvider({ children }) {
+   }
+ 
+ function entrarComGoogle() {
+-  window.location.href = "http://localhost:8080/oauth2/authorization/google";
++  window.location.href = "/oauth2/authorization/google";
+ }
+ 
+-function sair() {
+-  window.location.href = "http://localhost:8080/logout";
++async function sair() {
++  await api.sair();
++  setUsuario(null);
++  window.location.assign("/");
+ }
+ 
+   const autenticado = usuario !== null;
+diff --git a/siscomercial/backend/src/test/java/com/siscomercial/ecommerce/exception/GlobalExceptionHandlerTest.java b/siscomercial/backend/src/test/java/com/siscomercial/ecommerce/exception/GlobalExceptionHandlerTest.java
+new file mode 100644
+index 0000000..cae9c30
+--- /dev/null
++++ b/siscomercial/backend/src/test/java/com/siscomercial/ecommerce/exception/GlobalExceptionHandlerTest.java	
+@@ -0,0 +1,23 @@
++package com.siscomercial.ecommerce.exception;
++
++import org.junit.jupiter.api.Test;
++
++import static org.junit.jupiter.api.Assertions.assertEquals;
++import static org.junit.jupiter.api.Assertions.assertFalse;
++
++class GlobalExceptionHandlerTest {
++    private final GlobalExceptionHandler handler = new GlobalExceptionHandler();
++
++    @Test
++    void erroInternoNaoExpoeMensagemTecnicaNemCausa() {
++        var response = handler.handleGenerico(new IllegalStateException(
++                "jdbc url, caminho interno e token-falso", new RuntimeException("senha-falsa")));
++
++        assertEquals(500, response.getStatusCode().value());
++        String body = response.getBody().toString();
++        assertEquals("{erro=Erro interno. Tente novamente mais tarde.}", body);
++        assertFalse(body.contains("jdbc"));
++        assertFalse(body.contains("token-falso"));
++        assertFalse(body.contains("senha-falsa"));
++    }
++}
+diff --git a/siscomercial/backend/src/test/java/com/siscomercial/ecommerce/model/SensitiveEntityToStringTest.java b/siscomercial/backend/src/test/java/com/siscomercial/ecommerce/model/SensitiveEntityToStringTest.java
+new file mode 100644
+index 0000000..14fd0fd
+--- /dev/null
++++ b/siscomercial/backend/src/test/java/com/siscomercial/ecommerce/model/SensitiveEntityToStringTest.java	
+@@ -0,0 +1,70 @@
++package com.siscomercial.ecommerce.model;
++
++import org.junit.jupiter.api.Test;
++
++import static org.junit.jupiter.api.Assertions.assertFalse;
++
++class SensitiveEntityToStringTest {
++    @Test
++    void clienteToStringOmiteDadosPessoaisECredenciais() {
++        Cliente cliente = new Cliente();
++        cliente.setNomeRazaoSocial("nome-ficticio");
++        cliente.setCpfCnpj("cpf-ficticio");
++        cliente.setEmail("email-ficticio@example.test");
++        cliente.setTelefone("telefone-ficticio");
++        cliente.setSenhaHash("hash-ficticio");
++        cliente.setGoogleId("google-id-ficticio");
++
++        String value = cliente.toString();
++        assertFalse(value.contains("nome-ficticio"));
++        assertFalse(value.contains("cpf-ficticio"));
++        assertFalse(value.contains("email-ficticio"));
++        assertFalse(value.contains("telefone-ficticio"));
++        assertFalse(value.contains("hash-ficticio"));
++        assertFalse(value.contains("google-id-ficticio"));
++    }
++
++    @Test
++    void integracaoToStringOmiteTokensSegredosEOAuthState() {
++        IntegracaoMarketplace integracao = new IntegracaoMarketplace();
++        integracao.setCredenciaisProtegidas("refresh-token-ficticio");
++        integracao.setTokenProtegido("access-token-ficticio");
++        integracao.setOauthState("oauth-state-ficticio");
++
++        String value = integracao.toString();
++        assertFalse(value.contains("refresh-token-ficticio"));
++        assertFalse(value.contains("access-token-ficticio"));
++        assertFalse(value.contains("oauth-state-ficticio"));
++    }
++
++    @Test
++    void enderecoPedidoEPagamentoOmitToStringComDadosPessoaisEFinanceiros() {
++        Endereco endereco = new Endereco();
++        endereco.setCep("cep-ficticio");
++        endereco.setLogradouro("rua-ficticia");
++        endereco.setNumero("numero-ficticio");
++        endereco.setCidade("cidade-ficticia");
++        endereco.setEstado("estado-ficticio");
++        String enderecoText = endereco.toString();
++        assertFalse(enderecoText.contains("cep-ficticio"));
++        assertFalse(enderecoText.contains("rua-ficticia"));
++        assertFalse(enderecoText.contains("numero-ficticio"));
++        assertFalse(enderecoText.contains("cidade-ficticia"));
++        assertFalse(enderecoText.contains("estado-ficticio"));
++
++        Pedido pedido = new Pedido();
++        pedido.setNumeroPedido("pedido-ficticio");
++        pedido.setEnderecoCep("cep-pedido-ficticio");
++        pedido.setCodigoRastreamento("rastreio-ficticio");
++        pedido.setChaveNotaFiscal("chave-fiscal-ficticia");
++        String pedidoText = pedido.toString();
++        assertFalse(pedidoText.contains("pedido-ficticio"));
++        assertFalse(pedidoText.contains("cep-pedido-ficticio"));
++        assertFalse(pedidoText.contains("rastreio-ficticio"));
++        assertFalse(pedidoText.contains("chave-fiscal-ficticia"));
++
++        Pagamento pagamento = new Pagamento();
++        pagamento.setIdentificadorTransacao("transacao-ficticia");
++        assertFalse(pagamento.toString().contains("transacao-ficticia"));
++    }
++}
+

@@ -42,11 +42,10 @@ public class PedidoController {
             @RequestBody CheckoutRequest request,
             Authentication authentication) {
 
-        Cliente cliente =
-                obterClienteAutenticado(authentication);
+        OidcUser usuario = obterOidcUser(authentication);
 
         return pedidoService.criarPedido(
-                cliente,
+                usuario,
                 request.itens(),
                 request.enderecoEntrega(),
                 request.formaPagamento()
@@ -166,6 +165,10 @@ public class PedidoController {
      */
     private Cliente obterClienteAutenticado(
             Authentication authentication) {
+        return clienteService.buscarAutenticado(obterOidcUser(authentication));
+    }
+
+    private OidcUser obterOidcUser(Authentication authentication) {
 
         if (authentication == null
                 || !authentication.isAuthenticated()) {
@@ -185,16 +188,7 @@ public class PedidoController {
             );
         }
 
-        String email = oidcUser.getEmail();
-
-        if (email == null || email.isBlank()) {
-
-            throw new RegraNegocioException(
-                    "Nao foi possivel identificar o e-mail do usuario autenticado."
-            );
-        }
-
-        return clienteService.buscarPorEmail(email);
+        return oidcUser;
     }
 
     private void validarAcessoAoPedido(Long pedidoId, Cliente cliente) {

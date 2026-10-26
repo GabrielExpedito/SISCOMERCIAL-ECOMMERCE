@@ -24,6 +24,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.oidcLogin;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -108,6 +110,32 @@ class ClienteControllerTest {
                         || method.isAnnotationPresent(PatchMapping.class));
 
         assertFalse(possuiAtualizacao);
+    }
+
+    @Test
+    void consultaDeCadastroPassaIdentidadeOidcAoServicoDeAutorizacao() throws Exception {
+        when(clienteService.buscarAutorizado(org.mockito.ArgumentMatchers.eq(1L), any()))
+                .thenReturn(clienteDeResposta());
+        mockMvc.perform(get("/api/clientes/1").with(oidcLogin()
+                        .idToken(token -> token.subject("cliente-a-sub"))))
+                .andExpect(status().isOk());
+        verify(clienteService).buscarAutorizado(org.mockito.ArgumentMatchers.eq(1L), any());
+    }
+
+    @Test
+    void consultaAnonimaDeCadastroContinuaBloqueada() throws Exception {
+        mockMvc.perform(get("/api/clientes/1")).andExpect(status().is3xxRedirection());
+    }
+
+    @Test
+    void administradorPodeConsultarCadastroPeloServicoAutorizado() throws Exception {
+        when(clienteService.buscarAutorizado(org.mockito.ArgumentMatchers.eq(2L), any()))
+                .thenReturn(clienteDeResposta());
+        mockMvc.perform(get("/api/clientes/2").with(oidcLogin()
+                        .idToken(token -> token.subject("admin-sub"))
+                        .authorities(new org.springframework.security.core.authority.SimpleGrantedAuthority("ROLE_ADMIN"))))
+                .andExpect(status().isOk());
+        verify(clienteService).buscarAutorizado(org.mockito.ArgumentMatchers.eq(2L), any());
     }
 
     private String corpoCadastro(String camposExtrasNoCliente) throws Exception {

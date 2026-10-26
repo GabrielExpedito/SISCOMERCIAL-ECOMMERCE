@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 
 /**
  * RF003 - 7.2/7.3/7.4 Cadastro/login do cliente e enderecos.
@@ -58,8 +59,25 @@ public class ClienteService {
                 );
     }
 
+    /** Resolve a conta somente pelo identificador imutavel validado pelo provedor OIDC. */
+    public Cliente buscarAutenticado(OidcUser usuario) {
+        if (usuario == null || usuario.getSubject() == null || usuario.getSubject().isBlank()) {
+            throw new RegraNegocioException("Nao foi possivel identificar a conta autenticada.");
+        }
+        return clienteRepository.findByGoogleId(usuario.getSubject())
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Cadastro de cliente nao encontrado."));
+    }
+
+    public Cliente buscarAutorizado(Long id, OidcUser usuario) {
+        Cliente autenticado = buscarAutenticado(usuario);
+        if (autenticado.getPerfil() != PerfilUsuario.ADMIN && !autenticado.getId().equals(id)) {
+            throw new RecursoNaoEncontradoException("Cliente nao encontrado.");
+        }
+        return buscarPorId(id);
+    }
+
     @Transactional
-    public Endereco adicionarEndereco(Long clienteId, Endereco endereco) {
+    private Endereco adicionarEnderecoAoCliente(Long clienteId, Endereco endereco) {
         Cliente cliente = buscarPorId(clienteId);
         endereco.setCliente(cliente);
         if (cliente.getEnderecos().isEmpty()) {
@@ -68,6 +86,18 @@ public class ClienteService {
         cliente.getEnderecos().add(endereco);
         clienteRepository.save(cliente);
         return endereco;
+    }
+
+    @Transactional
+    public Endereco adicionarEndereco(Long clienteId, Endereco endereco, OidcUser usuario) {
+        Cliente autenticado = buscarAutenticado(usuario);
+        if (autenticado.getPerfil() != PerfilUsuario.ADMIN && !autenticado.getId().equals(clienteId)) {
+            throw new RecursoNaoEncontradoException("Cliente nao encontrado.");
+        }
+        if (endereco == null) throw new RegraNegocioException("Informe os dados do endereco.");
+        endereco.setId(null);
+        endereco.setCliente(null);
+        return adicionarEnderecoAoCliente(clienteId, endereco);
     }
 
     @Transactional

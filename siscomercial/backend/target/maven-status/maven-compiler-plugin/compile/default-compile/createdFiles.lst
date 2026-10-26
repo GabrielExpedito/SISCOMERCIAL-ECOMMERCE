@@ -3,6 +3,7 @@ com\siscomercial\ecommerce\model\FormaPagamento.class
 com\siscomercial\ecommerce\marketplace\AmazonAuthenticationService.class
 com\siscomercial\ecommerce\model\Pedido.class
 com\siscomercial\ecommerce\model\TipoMovimentacaoEstoque.class
+com\siscomercial\ecommerce\config\ProductionConfigurationValidator.class
 com\siscomercial\ecommerce\marketplace\MarketplaceOrderSyncOrchestratorService$ResultadoSincronizacao.class
 com\siscomercial\ecommerce\service\ProdutoService.class
 com\siscomercial\ecommerce\service\EstoqueService$1.class

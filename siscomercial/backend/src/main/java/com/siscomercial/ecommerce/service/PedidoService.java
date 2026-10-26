@@ -6,6 +6,7 @@ import com.siscomercial.ecommerce.model.*;
 import com.siscomercial.ecommerce.repository.PedidoRepository;
 import com.siscomercial.ecommerce.repository.HistoricoStatusPedidoRepository;
 import com.siscomercial.ecommerce.repository.ProdutoRepository;
+import com.siscomercial.ecommerce.repository.ClienteRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
@@ -15,6 +16,7 @@ import org.springframework.stereotype.Service;
 import jakarta.persistence.criteria.Predicate;
 import java.util.ArrayList;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -40,6 +42,7 @@ public class PedidoService {
     private int minutosExpiracaoReserva;
 
     private final NumeroPedidoService numeroPedidoService;
+    private final ClienteRepository clienteRepository;
 
     public record ItemCarrinho(Long produtoId, int quantidade) {
     }
@@ -48,8 +51,38 @@ public class PedidoService {
      * Cria o pedido a partir do carrinho, aplicando as regras RN021 a RN025.
      */
     @Transactional
-    public Pedido criarPedido(Cliente cliente, List<ItemCarrinho> itensCarrinho, Endereco enderecoEntrega,
+    public Pedido criarPedido(OidcUser usuario, List<ItemCarrinho> itensCarrinho, Endereco enderecoEntrega,
                               FormaPagamento formaPagamento) {
+        if (usuario == null || usuario.getSubject() == null || usuario.getSubject().isBlank()) {
+            throw new RegraNegocioException("Nao foi possivel identificar a conta autenticada.");
+        }
+        Cliente cliente = clienteRepository.findByGoogleId(usuario.getSubject())
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Cadastro de cliente nao encontrado."));
+        if (enderecoEntrega == null) {
+            throw new RegraNegocioException("Selecione um endereco cadastrado para entrega.");
+        }
+        if (enderecoEntrega.getId() == null) {
+            // O checkout atual recebe um endereço preenchido no formulário. Crie uma
+            // entidade nova com o dono definido pelo servidor e descarte IDs/proprietários do JSON.
+            Endereco novoEndereco = new Endereco();
+            novoEndereco.setCep(enderecoEntrega.getCep());
+            novoEndereco.setLogradouro(enderecoEntrega.getLogradouro());
+            novoEndereco.setNumero(enderecoEntrega.getNumero());
+            novoEndereco.setComplemento(enderecoEntrega.getComplemento());
+            novoEndereco.setBairro(enderecoEntrega.getBairro());
+            novoEndereco.setCidade(enderecoEntrega.getCidade());
+            novoEndereco.setEstado(enderecoEntrega.getEstado());
+            novoEndereco.setPrincipal(cliente.getEnderecos().isEmpty());
+            novoEndereco.setCliente(cliente);
+            cliente.getEnderecos().add(novoEndereco);
+            cliente = clienteRepository.save(cliente);
+            enderecoEntrega = novoEndereco;
+        } else {
+            Long enderecoId = enderecoEntrega.getId();
+            enderecoEntrega = cliente.getEnderecos().stream()
+                    .filter(e -> enderecoId.equals(e.getId()))
+                    .findFirst().orElseThrow(() -> new RegraNegocioException("Endereco de entrega invalido para este cliente."));
+        }
         if (itensCarrinho == null || itensCarrinho.isEmpty()) {
             throw new RegraNegocioException("O carrinho esta vazio.");
         }

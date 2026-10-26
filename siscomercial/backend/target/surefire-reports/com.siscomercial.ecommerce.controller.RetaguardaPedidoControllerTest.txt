@@ -1,4 +1,59 @@
 -------------------------------------------------------------------------------
 Test set: com.siscomercial.ecommerce.controller.RetaguardaPedidoControllerTest
 -------------------------------------------------------------------------------
-Tests run: 9, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.654 s -- in com.siscomercial.ecommerce.controller.RetaguardaPedidoControllerTest
+Tests run: 9, Failures: 5, Errors: 0, Skipped: 0, Time elapsed: 0.851 s <<< FAILURE! -- in com.siscomercial.ecommerce.controller.RetaguardaPedidoControllerTest
+com.siscomercial.ecommerce.controller.RetaguardaPedidoControllerTest.deveRetornarErro422ParaTransicaoInvalida -- Time elapsed: 0.017 s <<< FAILURE!
+java.lang.AssertionError: Status expected:<422> but was:<403>
+	at org.springframework.test.util.AssertionErrors.fail(AssertionErrors.java:59)
+	at org.springframework.test.util.AssertionErrors.assertEquals(AssertionErrors.java:122)
+	at org.springframework.test.web.servlet.result.StatusResultMatchers.lambda$matcher$9(StatusResultMatchers.java:637)
+	at org.springframework.test.web.servlet.MockMvc$1.andExpect(MockMvc.java:214)
+	at com.siscomercial.ecommerce.controller.RetaguardaPedidoControllerTest.deveRetornarErro422ParaTransicaoInvalida(RetaguardaPedidoControllerTest.java:153)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:568)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+
+com.siscomercial.ecommerce.controller.RetaguardaPedidoControllerTest.deveFaturarPedidoEmSeparacaoComDadosInformados -- Time elapsed: 0.007 s <<< FAILURE!
+java.lang.AssertionError: Status expected:<200> but was:<403>
+	at org.springframework.test.util.AssertionErrors.fail(AssertionErrors.java:59)
+	at org.springframework.test.util.AssertionErrors.assertEquals(AssertionErrors.java:122)
+	at org.springframework.test.web.servlet.result.StatusResultMatchers.lambda$matcher$9(StatusResultMatchers.java:637)
+	at org.springframework.test.web.servlet.MockMvc$1.andExpect(MockMvc.java:214)
+	at com.siscomercial.ecommerce.controller.RetaguardaPedidoControllerTest.deveFaturarPedidoEmSeparacaoComDadosInformados(RetaguardaPedidoControllerTest.java:184)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:568)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+
+com.siscomercial.ecommerce.controller.RetaguardaPedidoControllerTest.deveAvancarStatusComSucesso -- Time elapsed: 0.011 s <<< FAILURE!
+java.lang.AssertionError: Status expected:<200> but was:<403>
+	at org.springframework.test.util.AssertionErrors.fail(AssertionErrors.java:59)
+	at org.springframework.test.util.AssertionErrors.assertEquals(AssertionErrors.java:122)
+	at org.springframework.test.web.servlet.result.StatusResultMatchers.lambda$matcher$9(StatusResultMatchers.java:637)
+	at org.springframework.test.web.servlet.MockMvc$1.andExpect(MockMvc.java:214)
+	at com.siscomercial.ecommerce.controller.RetaguardaPedidoControllerTest.deveAvancarStatusComSucesso(RetaguardaPedidoControllerTest.java:136)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:568)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+
+com.siscomercial.ecommerce.controller.RetaguardaPedidoControllerTest.deveCancelarPedidoComSucesso -- Time elapsed: 0.011 s <<< FAILURE!
+java.lang.AssertionError: Status expected:<200> but was:<403>
+	at org.springframework.test.util.AssertionErrors.fail(AssertionErrors.java:59)
+	at org.springframework.test.util.AssertionErrors.assertEquals(AssertionErrors.java:122)
+	at org.springframework.test.web.servlet.result.StatusResultMatchers.lambda$matcher$9(StatusResultMatchers.java:637)
+	at org.springframework.test.web.servlet.MockMvc$1.andExpect(MockMvc.java:214)
+	at com.siscomercial.ecommerce.controller.RetaguardaPedidoControllerTest.deveCancelarPedidoComSucesso(RetaguardaPedidoControllerTest.java:169)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:568)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+
+com.siscomercial.ecommerce.controller.RetaguardaPedidoControllerTest.deveRegistrarEnvioComRastreamento -- Time elapsed: 0.008 s <<< FAILURE!
+java.lang.AssertionError: Status expected:<200> but was:<403>
+	at org.springframework.test.util.AssertionErrors.fail(AssertionErrors.java:59)
+	at org.springframework.test.util.AssertionErrors.assertEquals(AssertionErrors.java:122)
+	at org.springframework.test.web.servlet.result.StatusResultMatchers.lambda$matcher$9(StatusResultMatchers.java:637)
+	at org.springframework.test.web.servlet.MockMvc$1.andExpect(MockMvc.java:214)
+	at com.siscomercial.ecommerce.controller.RetaguardaPedidoControllerTest.deveRegistrarEnvioComRastreamento(RetaguardaPedidoControllerTest.java:200)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:568)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+
