@@ -1,0 +1,82 @@
+services:
+  - type: web
+    name: siscomercial-app
+    runtime: docker
+    plan: free
+    region: ohio
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /api/auth/csrf
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: prod
+      - key: DB_HOST
+        fromDatabase:
+          name: siscomercial-db
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: siscomercial-db
+          property: port
+      - key: DB_NAME
+        fromDatabase:
+          name: siscomercial-db
+          property: database
+      - key: DB_USERNAME
+        fromDatabase:
+          name: siscomercial-db
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: siscomercial-db
+          property: password
+      - key: FRONTEND_URL
+        value: https://siscomercial-app.onrender.com
+      - key: SESSION_COOKIE_SECURE
+        value: "true"
+      - key: UPLOAD_DIRECTORY
+        value: /var/data/uploads
+      - key: UPLOAD_PUBLIC_BASE_URL
+        value: https://siscomercial-app.onrender.com
+      - key: CATALOGO_PUBLIC_BASE_URL
+        value: https://siscomercial-app.onrender.com
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: MARKETPLACE_CRYPTO_KEY
+        sync: false
+      - key: MERCADO_LIVRE_CLIENT_ID
+        sync: false
+      - key: MERCADO_LIVRE_CLIENT_SECRET
+        sync: false
+      - key: MERCADO_LIVRE_REDIRECT_URI
+        value: https://siscomercial-app.onrender.com/api/retaguarda/marketplaces/mercado-livre/callback
+      - key: SHOPEE_PARTNER_ID
+        sync: false
+      - key: SHOPEE_PARTNER_KEY
+        sync: false
+      - key: SHOPEE_REDIRECT_URI
+        value: https://siscomercial-app.onrender.com/api/retaguarda/marketplaces/shopee/callback
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: AMAZON_LWA_CLIENT_ID
+        sync: false
+      - key: AMAZON_LWA_CLIENT_SECRET
+        sync: false
+      - key: AMAZON_LWA_REFRESH_TOKEN
+        sync: false
+      - key: AMAZON_SELLER_ID
+        sync: false
+      - key: AMAZON_MARKETPLACE_ID
+        sync: false
+      - key: AMAZON_TOKEN_DIAGNOSTIC_HMAC_KEY
+        sync: false
+
+databases:
+  - name: siscomercial-db
+    plan: free
+    region: ohio
+    databaseName: siscomercial
+    user: siscomercial
+    postgresMajorVersion: "16"

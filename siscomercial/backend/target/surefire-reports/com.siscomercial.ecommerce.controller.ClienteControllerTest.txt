@@ -1,4 +1,4 @@
 -------------------------------------------------------------------------------
 Test set: com.siscomercial.ecommerce.controller.ClienteControllerTest
 -------------------------------------------------------------------------------
-Tests run: 8, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 4.605 s -- in com.siscomercial.ecommerce.controller.ClienteControllerTest
+Tests run: 8, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 12.92 s -- in com.siscomercial.ecommerce.controller.ClienteControllerTest
