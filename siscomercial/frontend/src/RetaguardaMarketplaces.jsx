@@ -212,6 +212,7 @@ export default function RetaguardaMarketplaces() {
       ? produto.precoPromocional
       : produto.precoVenda;
     const problemas = [];
+    if (integracaoSelecionada?.marketplace === "MAGALU") problemas.push("A autorização Magalu está disponível, mas a publicação de produtos ainda não foi implementada.");
 
     if (integracaoSelecionada?.marketplace === "AMAZON") {
       if (!/^[A-Za-z0-9]{10}$/.test(produto.asinAmazon || "")) problemas.push("Informe o ASIN de um produto existente no catálogo Amazon");
@@ -675,7 +676,7 @@ export default function RetaguardaMarketplaces() {
                         Autorizar {nomeMarketplace(integracao.marketplace)}
                       </button>
                     )}
-                    {integracao.status === "ATIVA" && (
+                    {integracao.status === "ATIVA" && integracao.marketplace !== "MAGALU" && (
                       <button
                         type="button"
                         className="botao-secundario"
@@ -718,7 +719,7 @@ export default function RetaguardaMarketplaces() {
           <div className="cabecalho-marketplace">
             <div className="cabecalho-retaguarda">
               <h2>Publicar produto</h2>
-              <p>Selecione a integração e o produto que será enviado ao marketplace selecionado.</p>
+              <p>Selecione a integração e o produto que será enviado ao marketplace selecionado. A integração Magalu está nesta etapa limitada à autorização da conta.</p>
             </div>
           </div>
 
@@ -784,7 +785,7 @@ export default function RetaguardaMarketplaces() {
                   <button
                     type="button"
                     className="botao-secundario"
-                    disabled={!integracoes.some((item) => item.status === "ATIVA") || !produtoSelecionado || processando}
+                    disabled={!integracoes.some((item) => item.status === "ATIVA" && item.marketplace !== "MAGALU") || !produtoSelecionado || processando}
                     onClick={publicarMulticanal}
                   >
                     Publicar nos marketplaces ativos
