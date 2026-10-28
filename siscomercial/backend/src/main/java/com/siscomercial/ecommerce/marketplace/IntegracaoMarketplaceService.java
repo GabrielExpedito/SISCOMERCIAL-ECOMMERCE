@@ -352,7 +352,7 @@ public class IntegracaoMarketplaceService {
     }
 
     @Transactional
-    public IntegracaoMarketplace concluirAutorizacaoMagalu(String code, String state) {
+    public IntegracaoMarketplace concluirAutorizacaoMagalu(String code, String state, String tenantId) {
         exigirConfiguracaoMagalu();
         if (code == null || code.isBlank() || state == null || state.isBlank()) {
             throw new RegraNegocioException("Retorno OAuth do Magalu inválido ou expirado.");
@@ -389,7 +389,9 @@ public class IntegracaoMarketplaceService {
             if (!refreshToken.isBlank()) {
                 integracao.setCredenciaisProtegidas(credencialService.proteger(refreshToken));
             }
-            String userId = token.path("user_id").asText("");
+            String userId = tenantId == null ? "" : tenantId.trim();
+            if (userId.isBlank()) userId = token.path("tenant_id").asText("");
+            if (userId.isBlank()) userId = token.path("user_id").asText("");
             if (userId.isBlank()) userId = token.path("sub").asText("");
             if (!userId.isBlank()) integracao.setIdentificadorExterno(userId);
             integracao.setTokenExpiraEm(LocalDateTime.now().plusSeconds(token.path("expires_in").asLong(3600)));
