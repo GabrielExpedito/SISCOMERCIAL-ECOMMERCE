@@ -2048,3 +2048,32 @@ button {
     margin-left: 0;
   }
 }
+
+
+/* Links institucionais do rodapé da loja */
+.rodape-legal {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 18px;
+  padding: 22px 5vw;
+  border-top: 1px solid #e8ebf2;
+  background: #fff;
+  color: #8992a5;
+  font-size: 11px;
+}
+.rodape-legal nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+}
+.rodape-legal a {
+  color: #656e82;
+  text-decoration: none;
+}
+.rodape-legal a:hover { color: #554cc9; text-decoration: underline; }
+@media (max-width: 620px) {
+  .rodape-legal { align-items: flex-start; flex-direction: column; padding: 20px 18px; }
+  .rodape-legal nav { gap: 12px 16px; }
+}
+

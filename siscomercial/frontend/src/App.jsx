@@ -6,6 +6,7 @@ import RetaguardaMarketplaces from "./RetaguardaMarketplaces.jsx";
 import RetaguardaProdutos from "./RetaguardaProdutos.jsx";
 import RetaguardaHome from "./RetaguardaHome.jsx";
 import { useAuth } from "./context/AuthContext.jsx";
+import LegalPage from "./LegalPage.jsx";
 
 function formatarPreco(valor) {
   return Number(valor || 0).toLocaleString("pt-BR", {
@@ -18,7 +19,7 @@ function imagemProduto(produto) {
   return produto.imagemPrincipal || produto.imagem || null;
 }
 
-export default function App() {
+function LojaApp() {
   const {
     usuario,
     carregando: carregandoAuth,
@@ -568,6 +569,30 @@ export default function App() {
           </section>
         </div>
       )}
+
+      <footer className="rodape-legal">
+        <span>© {new Date().getFullYear()} SisComercial</span>
+        <nav aria-label="Links institucionais">
+          <a href="/termos-de-uso">Termos de Uso</a>
+          <a href="/politica-de-privacidade">Política de Privacidade</a>
+          <a href="mailto:gabrielexpedi18@gmail.com">Contato</a>
+        </nav>
+      </footer>
     </div>
   );
+}
+
+
+export default function App() {
+  const caminho = window.location.pathname.replace(/\/+$/, "") || "/";
+
+  if (caminho === "/termos-de-uso") {
+    return <LegalPage tipo="termos" />;
+  }
+
+  if (caminho === "/politica-de-privacidade") {
+    return <LegalPage tipo="privacidade" />;
+  }
+
+  return <LojaApp />;
 }

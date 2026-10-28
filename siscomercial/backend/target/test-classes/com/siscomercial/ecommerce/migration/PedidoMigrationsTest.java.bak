@@ -1,0 +1,151 @@
+package com.siscomercial.ecommerce.migration;
+
+import org.flywaydb.core.Flyway;
+import org.junit.jupiter.api.Test;
+import org.springframework.core.io.FileSystemResource;
+import org.springframework.jdbc.datasource.DriverManagerDataSource;
+import org.springframework.jdbc.datasource.init.ScriptUtils;
+
+import javax.sql.DataSource;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.util.Comparator;
+import java.util.List;
+import java.util.stream.Collectors;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+class PedidoMigrationsTest {
+
+    @Test
+    void deveAplicarMigrationsDePedidoDepoisDoBaseline() throws Exception {
+        String url = "jdbc:h2:mem:flyway_pedido;DB_CLOSE_DELAY=-1";
+
+        DataSource dataSource = new DriverManagerDataSource(
+                url,
+                "sa",
+                ""
+        );
+
+        Path migrationsOriginais = Path.of(
+                "src/main/resources/db/migration"
+        );
+
+        Path migrationsTemporarias = Files.createTempDirectory(
+                "flyway-pedido-migrations"
+        );
+
+        try {
+            List<Path> arquivos = Files.list(migrationsOriginais)
+                    .filter(Files::isRegularFile)
+                    .sorted(Comparator.comparing(
+                            path -> path.getFileName().toString()
+                    ))
+                    .collect(Collectors.toList());
+
+            for (Path arquivo : arquivos) {
+                String nome = arquivo.getFileName().toString();
+
+                if (nome.startsWith("V9__")) {
+                    String conteudo = Files.readString(arquivo);
+
+                    conteudo = conteudo.replace(
+                            "ADD COLUMN IF NOT EXISTS categoria_mercado_livre_id VARCHAR(100);",
+                            "ADD COLUMN categoria_mercado_livre_id VARCHAR(100);"
+                    );
+
+                    conteudo = conteudo.replace(
+                            "ADD COLUMN IF NOT EXISTS categoria_mercado_livre_nome VARCHAR(255);",
+                            "ADD COLUMN categoria_mercado_livre_nome VARCHAR(255);"
+                    );
+
+                    Files.writeString(
+                            migrationsTemporarias.resolve(nome),
+                            conteudo
+                    );
+                } else {
+                    Files.copy(
+                            arquivo,
+                            migrationsTemporarias.resolve(nome)
+                    );
+                }
+            }
+
+            /*
+             * A V1 representa o schema inicial da aplicação.
+             * Como o teste valida migrations posteriores a um baseline,
+             * precisamos criar fisicamente o schema da V1 antes de
+             * registrar o baseline no Flyway.
+             */
+            Path migrationV1 = migrationsTemporarias.resolve(
+                    arquivos.stream()
+                            .filter(path -> path.getFileName()
+                                    .toString()
+                                    .startsWith("V1__"))
+                            .findFirst()
+                            .orElseThrow(() ->
+                                    new IllegalStateException(
+                                            "Migration V1 não encontrada."
+                                    ))
+                            .getFileName()
+                            .toString()
+            );
+
+            try (Connection connection = dataSource.getConnection()) {
+                ScriptUtils.executeSqlScript(
+                        connection,
+                        new FileSystemResource(migrationV1.toFile())
+                );
+            }
+
+            Flyway flyway = Flyway.configure()
+                    .dataSource(dataSource)
+                    .locations(
+                            "filesystem:"
+                                    + migrationsTemporarias.toAbsolutePath()
+                    )
+                    .baselineOnMigrate(true)
+                    .baselineVersion("1")
+                    .load();
+
+            flyway.migrate();
+
+            try (Connection connection = dataSource.getConnection();
+                 ResultSet resultSet = connection.createStatement().executeQuery(
+                         "SELECT COUNT(*) " +
+                                 "FROM flyway_schema_history " +
+                                 "WHERE success = TRUE AND version <> '1'"
+                 )) {
+
+                assertTrue(resultSet.next());
+                assertEquals(12, resultSet.getInt(1));
+            }
+
+            assertEquals(
+                    "13",
+                    flyway.info()
+                            .current()
+                            .getVersion()
+                            .getVersion()
+            );
+
+        } finally {
+            try (var arquivosTemporarios =
+                         Files.walk(migrationsTemporarias)) {
+
+                arquivosTemporarios
+                        .sorted(Comparator.reverseOrder())
+                        .forEach(path -> {
+                            try {
+                                Files.deleteIfExists(path);
+                            } catch (Exception ignored) {
+                                // Limpeza dos arquivos temporários do teste.
+                            }
+                        });
+            }
+        }
+    }
+}
