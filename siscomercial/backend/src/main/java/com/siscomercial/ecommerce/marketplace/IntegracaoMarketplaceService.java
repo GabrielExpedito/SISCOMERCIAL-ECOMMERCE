@@ -419,9 +419,6 @@ public class IntegracaoMarketplaceService {
                 || magaluAuthUrl.isBlank() || magaluTokenUrl.isBlank()) {
             throw new RegraNegocioException("Configure MAGALU_CLIENT_ID, MAGALU_CLIENT_SECRET, MAGALU_REDIRECT_URI, MAGALU_AUTH_URL e MAGALU_TOKEN_URL no backend.");
         }
-        if (magaluScopes.isBlank()) {
-            throw new RegraNegocioException("Configure MAGALU_SCOPES com os escopos concedidos ao aplicativo no Magalu IDM.");
-        }
     }
 
     public java.util.List<IntegracaoMarketplace> listar() { return repository.findAll(); }
