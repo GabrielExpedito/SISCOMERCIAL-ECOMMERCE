@@ -785,7 +785,7 @@ export default function RetaguardaMarketplaces() {
                   <button
                     type="button"
                     className="botao-secundario"
-                    disabled={!integracoes.some((item) => item.status === "ATIVA" && item.marketplace !== "MAGALU") || !produtoSelecionado || processando}
+                    disabled={!integracoes.some((item) => item.status === "ATIVA" && item.marketplace !== "MAGALU") || integracoes.some((item) => item.status === "ATIVA" && item.marketplace === "MAGALU") || !produtoSelecionado || processando}
                     onClick={publicarMulticanal}
                   >
                     Publicar nos marketplaces ativos
