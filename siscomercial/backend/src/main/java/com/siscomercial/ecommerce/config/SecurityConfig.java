@@ -53,6 +53,8 @@ public class SecurityConfig {
                         .permitAll()
                         .requestMatchers("/api/retaguarda/marketplaces/shopee/callback")
                         .permitAll()
+                        .requestMatchers("/api/retaguarda/marketplaces/magalu/callback")
+                        .permitAll()
 
                         .requestMatchers("/api/retaguarda/**")
                         .hasRole("ADMIN")
