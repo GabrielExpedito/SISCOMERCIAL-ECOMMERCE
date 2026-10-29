@@ -344,9 +344,7 @@ public class IntegracaoMarketplaceService {
                 .append("&redirect_uri=").append(codificar(magaluRedirectUri))
                 .append("&response_type=code")
                 .append("&state=").append(codificar(state));
-        if (!magaluScopes.isBlank()) {
-            url.append("&scope=").append(codificar(magaluScopes.trim()));
-        }
+        url.append("&scope=").append(codificar(magaluScopes.trim()));
         url.append("&choose_tenants=true");
         return url.toString();
     }
@@ -418,8 +416,8 @@ public class IntegracaoMarketplaceService {
 
     private void exigirConfiguracaoMagalu() {
         if (magaluClientId.isBlank() || magaluClientSecret.isBlank() || magaluRedirectUri.isBlank()
-                || magaluAuthUrl.isBlank() || magaluTokenUrl.isBlank()) {
-            throw new RegraNegocioException("Configure MAGALU_CLIENT_ID, MAGALU_CLIENT_SECRET, MAGALU_REDIRECT_URI, MAGALU_AUTH_URL e MAGALU_TOKEN_URL no backend.");
+                || magaluAuthUrl.isBlank() || magaluTokenUrl.isBlank() || magaluScopes.isBlank()) {
+            throw new RegraNegocioException("Configure MAGALU_CLIENT_ID, MAGALU_CLIENT_SECRET, MAGALU_REDIRECT_URI, MAGALU_AUTH_URL, MAGALU_TOKEN_URL e MAGALU_SCOPES no backend.");
         }
     }
 
