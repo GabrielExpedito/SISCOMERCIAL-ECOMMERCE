@@ -1,13 +1,15 @@
 package com.siscomercial.ecommerce.config;
 
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
 import org.springframework.security.web.csrf.HttpSessionCsrfTokenRepository;
@@ -17,6 +19,8 @@ import org.springframework.security.web.session.HttpSessionEventPublisher;
 @EnableWebSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
+
+    private static final Logger log = LoggerFactory.getLogger(SecurityConfig.class);
 
     private final CustomOAuth2UserService customOAuth2UserService;
 
@@ -90,9 +94,10 @@ public class SecurityConfig {
                         })
 
                         .failureHandler((request, response, exception) -> {
-                            response.sendRedirect(
-                                    frontendUrl + "/login?erro=google"
-                            );
+                            log.error("Falha na autenticacao OAuth do Google: tipo={}, mensagem={}",
+                                    exception.getClass().getSimpleName(), exception.getMessage());
+                            String urlFrontend = frontendUrl.replaceAll("/+$", "");
+                            response.sendRedirect(urlFrontend + "/?erro=google");
                         })
                 )
 
