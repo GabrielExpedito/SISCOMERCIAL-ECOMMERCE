@@ -360,10 +360,11 @@ export default function RetaguardaMarketplaces() {
           pollingRef.current = null;
           if (popupRef.current && !popupRef.current.closed)
             popupRef.current.close();
+          const marketplaceNome = nomeMarketplace(atualizada.marketplace);
           setMensagem(
             atualizada.status === "ATIVA"
-              ? "Mercado Livre autorizado com sucesso. A integração está ativa."
-              : "O Mercado Livre retornou, mas a integração ficou em estado de erro.",
+              ? `${marketplaceNome} autorizado com sucesso. A integração está ativa.`
+              : `${marketplaceNome} retornou, mas a integração ficou em estado de erro.`,
           );
         }
       } catch {
@@ -785,7 +786,7 @@ export default function RetaguardaMarketplaces() {
                   <button
                     type="button"
                     className="botao-secundario"
-                    disabled={!integracoes.some((item) => item.status === "ATIVA" && item.marketplace !== "MAGALU") || integracoes.some((item) => item.status === "ATIVA" && item.marketplace === "MAGALU") || !produtoSelecionado || processando}
+                    disabled={!integracoes.some((item) => item.status === "ATIVA" && item.marketplace !== "MAGALU") || !produtoSelecionado || processando}
                     onClick={publicarMulticanal}
                   >
                     Publicar nos marketplaces ativos
