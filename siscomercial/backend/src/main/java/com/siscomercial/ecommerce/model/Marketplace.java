@@ -4,5 +4,6 @@ package com.siscomercial.ecommerce.model;
 public enum Marketplace {
     MERCADO_LIVRE,
     SHOPEE,
-    AMAZON
+    AMAZON,
+    MAGALU
 }

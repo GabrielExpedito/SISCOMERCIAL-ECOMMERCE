@@ -41,6 +41,12 @@ public class IntegracaoMarketplaceService {
     @Value("${siscomercial.shopee.partner-id:}") private String shopeePartnerId;
     @Value("${siscomercial.shopee.partner-key:}") private String shopeePartnerKey;
     @Value("${siscomercial.shopee.redirect-uri:}") private String shopeeRedirectUri;
+    @Value("${siscomercial.magalu.client-id:}") private String magaluClientId;
+    @Value("${siscomercial.magalu.client-secret:}") private String magaluClientSecret;
+    @Value("${siscomercial.magalu.redirect-uri:}") private String magaluRedirectUri;
+    @Value("${siscomercial.magalu.auth-url:https://id.magalu.com/login}") private String magaluAuthUrl;
+    @Value("${siscomercial.magalu.token-url:https://id.magalu.com/oauth/token}") private String magaluTokenUrl;
+    @Value("${siscomercial.magalu.scopes:}") private String magaluScopes;
 
     @Transactional
     public IntegracaoMarketplace criarMercadoLivre(String lojaProprietaria, String identificadorExterno) {
@@ -306,6 +312,113 @@ public class IntegracaoMarketplaceService {
         integracao.setUltimaSincronizacao(LocalDateTime.now());
         if (integracao.getStatus() == StatusIntegracaoMarketplace.ERRO) integracao.setStatus(StatusIntegracaoMarketplace.ATIVA);
         return repository.save(integracao);
+    }
+
+
+    @Transactional
+    public IntegracaoMarketplace criarMagalu(String lojaProprietaria) {
+        exigirConfiguracaoMagalu();
+        if (lojaProprietaria == null || lojaProprietaria.isBlank()) {
+            throw new RegraNegocioException("Informe o nome da loja Magalu.");
+        }
+        String identificadorPendente = "MAGALU-PENDENTE-" + UUID.randomUUID();
+        IntegracaoMarketplace integracao = new IntegracaoMarketplace();
+        integracao.setMarketplace(Marketplace.MAGALU);
+        integracao.setLojaProprietaria(lojaProprietaria.trim());
+        integracao.setIdentificadorExterno(identificadorPendente);
+        integracao.setStatus(StatusIntegracaoMarketplace.CONFIGURADA);
+        return repository.save(integracao);
+    }
+
+    @Transactional
+    public String iniciarAutorizacaoMagalu(Long integracaoId) {
+        exigirConfiguracaoMagalu();
+        IntegracaoMarketplace integracao = buscarMagalu(integracaoId);
+        String state = UUID.randomUUID().toString();
+        integracao.setOauthState(state);
+        integracao.setOauthStateExpiraEm(LocalDateTime.now().plusMinutes(10));
+        repository.save(integracao);
+
+        StringBuilder url = new StringBuilder(magaluAuthUrl)
+                .append("?client_id=").append(codificar(magaluClientId))
+                .append("&redirect_uri=").append(codificar(magaluRedirectUri))
+                .append("&response_type=code")
+                .append("&state=").append(codificar(state));
+        url.append("&scope=").append(codificar(magaluScopes.trim()));
+        url.append("&choose_tenants=true");
+        return url.toString();
+    }
+
+    @Transactional
+    public IntegracaoMarketplace concluirAutorizacaoMagalu(String code, String state, String tenantId) {
+        exigirConfiguracaoMagalu();
+        if (code == null || code.isBlank() || state == null || state.isBlank()) {
+            throw new RegraNegocioException("Retorno OAuth do Magalu inválido ou expirado.");
+        }
+        IntegracaoMarketplace integracao = repository.findByOauthState(state)
+                .orElseThrow(() -> new RegraNegocioException("Retorno OAuth do Magalu inválido ou expirado."));
+        if (integracao.getMarketplace() != Marketplace.MAGALU
+                || integracao.getOauthStateExpiraEm() == null
+                || integracao.getOauthStateExpiraEm().isBefore(LocalDateTime.now())) {
+            throw new RegraNegocioException("Retorno OAuth do Magalu inválido ou expirado.");
+        }
+        try {
+            Map<String, Object> body = Map.of(
+                    "client_id", magaluClientId,
+                    "client_secret", magaluClientSecret,
+                    "redirect_uri", magaluRedirectUri,
+                    "code", code,
+                    "grant_type", "authorization_code"
+            );
+            HttpRequest request = HttpRequest.newBuilder(URI.create(magaluTokenUrl))
+                    .header("Content-Type", "application/json")
+                    .POST(HttpRequest.BodyPublishers.ofString(objectMapper.writeValueAsString(body)))
+                    .build();
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            JsonNode token = objectMapper.readTree(response.body());
+            String accessToken = token.path("access_token").asText();
+            if (response.statusCode() < 200 || response.statusCode() >= 300 || accessToken.isBlank()) {
+                log.warn("Magalu OAuth exchange failed; status={}", response.statusCode());
+                throw new RegraNegocioException("O Magalu recusou a autorização (HTTP " + response.statusCode() + ").");
+            }
+
+            integracao.setTokenProtegido(credencialService.proteger(accessToken));
+            String refreshToken = token.path("refresh_token").asText("");
+            if (!refreshToken.isBlank()) {
+                integracao.setCredenciaisProtegidas(credencialService.proteger(refreshToken));
+            }
+            String userId = tenantId == null ? "" : tenantId.trim();
+            if (userId.isBlank()) userId = token.path("tenant_id").asText("");
+            if (userId.isBlank()) userId = token.path("user_id").asText("");
+            if (userId.isBlank()) userId = token.path("sub").asText("");
+            if (!userId.isBlank()) integracao.setIdentificadorExterno(userId);
+            integracao.setTokenExpiraEm(LocalDateTime.now().plusSeconds(token.path("expires_in").asLong(3600)));
+            integracao.setUltimaSincronizacao(LocalDateTime.now());
+            integracao.setOauthState(null);
+            integracao.setOauthStateExpiraEm(null);
+            integracao.setStatus(StatusIntegracaoMarketplace.ATIVA);
+            return repository.save(integracao);
+        } catch (RegraNegocioException e) {
+            throw e;
+        } catch (Exception e) {
+            log.warn("Magalu OAuth callback failed; causeType={}", e.getClass().getSimpleName());
+            throw new RegraNegocioException("Falha ao concluir a autorização do Magalu.");
+        }
+    }
+
+    private IntegracaoMarketplace buscarMagalu(Long id) {
+        IntegracaoMarketplace integracao = buscar(id);
+        if (integracao.getMarketplace() != Marketplace.MAGALU) {
+            throw new RegraNegocioException("Esta operação é exclusiva do Magalu.");
+        }
+        return integracao;
+    }
+
+    private void exigirConfiguracaoMagalu() {
+        if (magaluClientId.isBlank() || magaluClientSecret.isBlank() || magaluRedirectUri.isBlank()
+                || magaluAuthUrl.isBlank() || magaluTokenUrl.isBlank() || magaluScopes.isBlank()) {
+            throw new RegraNegocioException("Configure MAGALU_CLIENT_ID, MAGALU_CLIENT_SECRET, MAGALU_REDIRECT_URI, MAGALU_AUTH_URL, MAGALU_TOKEN_URL e MAGALU_SCOPES no backend.");
+        }
     }
 
     public java.util.List<IntegracaoMarketplace> listar() { return repository.findAll(); }

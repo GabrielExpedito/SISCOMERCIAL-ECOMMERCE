@@ -156,6 +156,9 @@ public class MarketplaceOrchestratorService {
     public PublicacaoMarketplace publicar(Long integracaoId, Long produtoId) {
         IntegracaoMarketplace integracao = integracaoRepository.findById(integracaoId)
                 .orElseThrow(() -> new RecursoNaoEncontradoException("Integracao de marketplace nao encontrada: " + integracaoId));
+        if (integracao.getMarketplace() == Marketplace.MAGALU) {
+            throw new RegraNegocioException("A publicação de produtos no Magalu ainda não foi implementada.");
+        }
         if (integracao.getStatus() != StatusIntegracaoMarketplace.ATIVA) {
             throw new RegraNegocioException("A integracao deve estar ativa para publicar produtos.");
         }
@@ -209,7 +212,9 @@ public class MarketplaceOrchestratorService {
     @Transactional
     public List<PublicacaoMarketplace> publicarMulticanal(Long produtoId) {
         List<IntegracaoMarketplace> integracoesAtivas =
-                integracaoRepository.findByStatus(StatusIntegracaoMarketplace.ATIVA);
+                integracaoRepository.findByStatus(StatusIntegracaoMarketplace.ATIVA).stream()
+                        .filter(integracao -> integracao.getMarketplace() != Marketplace.MAGALU)
+                        .toList();
         if (integracoesAtivas.isEmpty()) return List.of();
 
         Produto produto = produtoRepository.findById(produtoId)
@@ -222,6 +227,9 @@ public class MarketplaceOrchestratorService {
     }
 
     private PublicacaoMarketplace publicarEmIntegracao(IntegracaoMarketplace integracao, Produto produto) {
+        if (integracao.getMarketplace() == Marketplace.MAGALU) {
+            throw new RegraNegocioException("A publicação de produtos no Magalu ainda não foi implementada.");
+        }
         List<StatusPublicacaoMarketplace> statusBloqueadores = List.of(
                 StatusPublicacaoMarketplace.PENDENTE,
                 StatusPublicacaoMarketplace.PUBLICADA,

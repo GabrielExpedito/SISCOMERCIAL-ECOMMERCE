@@ -86,6 +86,17 @@ export const api = {
       body: JSON.stringify(payload),
     }),
 
+  criarIntegracaoMagalu: (payload) =>
+    request("/retaguarda/marketplaces/magalu", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+
+  iniciarAutorizacaoMagalu: (id) =>
+    request(`/retaguarda/marketplaces/${id}/magalu/autorizacao`, {
+      method: "POST",
+    }),
+
   iniciarAutorizacaoShopee: (id) =>
     request(`/retaguarda/marketplaces/${id}/shopee/autorizacao`, {
       method: "POST",

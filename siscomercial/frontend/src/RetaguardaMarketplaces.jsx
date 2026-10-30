@@ -22,6 +22,7 @@ const labelBotaoPublicacao = (marketplace) => {
   if (marketplace === "MERCADO_LIVRE") return "Publicar no Mercado Livre";
   if (marketplace === "SHOPEE") return "Publicar na Shopee";
   if (marketplace === "AMAZON") return "Publicar na Amazon";
+  if (marketplace === "MAGALU") return "Publicar no Magalu";
   return "Publicar produto";
 };
 
@@ -29,6 +30,7 @@ const nomeMarketplace = (marketplace) => {
   if (marketplace === "MERCADO_LIVRE") return "Mercado Livre";
   if (marketplace === "SHOPEE") return "Shopee";
   if (marketplace === "AMAZON") return "Amazon";
+  if (marketplace === "MAGALU") return "Magalu";
   return marketplace || "Marketplace";
 };
 
@@ -210,6 +212,7 @@ export default function RetaguardaMarketplaces() {
       ? produto.precoPromocional
       : produto.precoVenda;
     const problemas = [];
+    if (integracaoSelecionada?.marketplace === "MAGALU") problemas.push("A autorização Magalu está disponível, mas a publicação de produtos ainda não foi implementada.");
 
     if (integracaoSelecionada?.marketplace === "AMAZON") {
       if (!/^[A-Za-z0-9]{10}$/.test(produto.asinAmazon || "")) problemas.push("Informe o ASIN de um produto existente no catálogo Amazon");
@@ -277,9 +280,11 @@ export default function RetaguardaMarketplaces() {
       };
       const criada = marketplaceNovo === "AMAZON"
         ? await api.criarIntegracaoAmazon(payload)
-        : marketplaceNovo === "SHOPEE"
-          ? await api.criarIntegracaoShopee(payload)
-          : await api.criarIntegracaoMercadoLivre(payload);
+        : marketplaceNovo === "MAGALU"
+          ? await api.criarIntegracaoMagalu(payload)
+          : marketplaceNovo === "SHOPEE"
+            ? await api.criarIntegracaoShopee(payload)
+            : await api.criarIntegracaoMercadoLivre(payload);
       setModalNova(false);
       setLojaProprietaria("Minha loja");
       setIdentificadorExterno("");
@@ -297,7 +302,7 @@ export default function RetaguardaMarketplaces() {
       setIntegracaoSelecionada(criada);
       setMensagem(marketplaceNovo === "AMAZON"
         ? "Integração Amazon criada usando a configuração segura do backend."
-        : `Integração ${marketplaceNovo === "SHOPEE" ? "Shopee" : "Mercado Livre"} criada. Agora autorize o acesso à conta.`);
+        : `Integração ${nomeMarketplace(marketplaceNovo)} criada. Agora autorize o acesso à conta.`);
     } catch (e) {
       setErro(e.message);
     } finally {
@@ -310,12 +315,14 @@ export default function RetaguardaMarketplaces() {
     try {
       setProcessando(true);
       if (integracao.marketplace === "AMAZON") return;
-      const resposta = integracao.marketplace === "SHOPEE"
-        ? await api.iniciarAutorizacaoShopee(integracao.id)
-        : await api.iniciarAutorizacaoMercadoLivre(integracao.id);
+      const resposta = integracao.marketplace === "MAGALU"
+        ? await api.iniciarAutorizacaoMagalu(integracao.id)
+        : integracao.marketplace === "SHOPEE"
+          ? await api.iniciarAutorizacaoShopee(integracao.id)
+          : await api.iniciarAutorizacaoMercadoLivre(integracao.id);
       const popup = window.open(
         resposta.urlAutorizacao,
-        integracao.marketplace === "SHOPEE" ? "shopeeOAuth" : "mercadoLivreOAuth",
+        integracao.marketplace === "MAGALU" ? "magaluOAuth" : integracao.marketplace === "SHOPEE" ? "shopeeOAuth" : "mercadoLivreOAuth",
         "width=900,height=760,resizable=yes,scrollbars=yes",
       );
       popupRef.current = popup;
@@ -329,7 +336,7 @@ export default function RetaguardaMarketplaces() {
 
       setIntegracaoSelecionada(integracao);
       setMensagem(
-        `A autorização foi aberta. Conclua o login e a autorização no ${integracao.marketplace === "SHOPEE" ? "Shopee" : "Mercado Livre"}.`,
+        `A autorização foi aberta. Conclua o login e a autorização no ${nomeMarketplace(integracao.marketplace)}.`,
       );
       iniciarAcompanhamento(integracao.id);
     } catch (e) {
@@ -353,10 +360,11 @@ export default function RetaguardaMarketplaces() {
           pollingRef.current = null;
           if (popupRef.current && !popupRef.current.closed)
             popupRef.current.close();
+          const marketplaceNome = nomeMarketplace(atualizada.marketplace);
           setMensagem(
             atualizada.status === "ATIVA"
-              ? "Mercado Livre autorizado com sucesso. A integração está ativa."
-              : "O Mercado Livre retornou, mas a integração ficou em estado de erro.",
+              ? `${marketplaceNome} autorizado com sucesso. A integração está ativa.`
+              : `${marketplaceNome} retornou, mas a integração ficou em estado de erro.`,
           );
         }
       } catch {
@@ -640,7 +648,7 @@ export default function RetaguardaMarketplaces() {
                 >
                   <div className="marketplace-card-cabecalho">
                     <div className="marketplace-identidade">
-                      <div className="marketplace-logo">{integracao.marketplace === "AMAZON" ? "AMZ" : integracao.marketplace === "SHOPEE" ? "SH" : "ML"}</div>
+                      <div className="marketplace-logo">{integracao.marketplace === "AMAZON" ? "AMZ" : integracao.marketplace === "SHOPEE" ? "SH" : integracao.marketplace === "MAGALU" ? "MG" : "ML"}</div>
                       <div>
                         <span className="marketplace-tipo">{nomeMarketplace(integracao.marketplace).toUpperCase()}</span>
                         <h3>{integracao.lojaProprietaria}</h3>
@@ -666,10 +674,10 @@ export default function RetaguardaMarketplaces() {
                         disabled={processando}
                         onClick={() => autorizar(integracao)}
                       >
-                        Autorizar {integracao.marketplace === "SHOPEE" ? "Shopee" : "Mercado Livre"}
+                        Autorizar {nomeMarketplace(integracao.marketplace)}
                       </button>
                     )}
-                    {integracao.status === "ATIVA" && (
+                    {integracao.status === "ATIVA" && integracao.marketplace !== "MAGALU" && (
                       <button
                         type="button"
                         className="botao-secundario"
@@ -712,7 +720,7 @@ export default function RetaguardaMarketplaces() {
           <div className="cabecalho-marketplace">
             <div className="cabecalho-retaguarda">
               <h2>Publicar produto</h2>
-              <p>Selecione a integração e o produto que será enviado ao marketplace selecionado.</p>
+              <p>Selecione a integração e o produto que será enviado ao marketplace selecionado. A integração Magalu está nesta etapa limitada à autorização da conta.</p>
             </div>
           </div>
 
@@ -778,7 +786,7 @@ export default function RetaguardaMarketplaces() {
                   <button
                     type="button"
                     className="botao-secundario"
-                    disabled={!integracoes.some((item) => item.status === "ATIVA") || !produtoSelecionado || processando}
+                    disabled={!integracoes.some((item) => item.status === "ATIVA" && item.marketplace !== "MAGALU") || !produtoSelecionado || processando}
                     onClick={publicarMulticanal}
                   >
                     Publicar nos marketplaces ativos
@@ -1028,6 +1036,7 @@ export default function RetaguardaMarketplaces() {
                   <option value="MERCADO_LIVRE">Mercado Livre</option>
                   <option value="SHOPEE">Shopee</option>
                   <option value="AMAZON">Amazon</option>
+                  <option value="MAGALU">Magalu</option>
                 </select>
               </label>
               <label>
@@ -1039,7 +1048,7 @@ export default function RetaguardaMarketplaces() {
                   placeholder="Minha loja"
                 />
               </label>
-              {marketplaceNovo !== "AMAZON" && <label>
+              {marketplaceNovo !== "AMAZON" && marketplaceNovo !== "MAGALU" && <label>
                 Identificador externo
                 <input
                   required
@@ -1053,7 +1062,9 @@ export default function RetaguardaMarketplaces() {
                 <span>
                   {marketplaceNovo === "AMAZON"
                     ? "A integração usará as credenciais configuradas no backend; informe também o ASIN Amazon no cadastro de cada produto."
-                    : "Após criar a integração, o Siscomercial abrirá a autorização OAuth do marketplace em uma nova janela."}
+                    : marketplaceNovo === "MAGALU"
+                      ? "A integração usará as credenciais Magalu configuradas no backend e abrirá o consentimento OAuth em uma nova janela. A publicação de produtos será habilitada em uma etapa posterior."
+                      : "Após criar a integração, o Siscomercial abrirá a autorização OAuth do marketplace em uma nova janela."}
                 </span>
               </div>
               <div className="marketplace-modal-acoes">

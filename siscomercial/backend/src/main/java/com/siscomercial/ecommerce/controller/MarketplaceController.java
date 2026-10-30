@@ -42,6 +42,24 @@ public class MarketplaceController {
         return resumo(integracaoService.criarAmazon(request.lojaProprietaria()));
     }
 
+    @PostMapping("/magalu")
+    public IntegracaoResponse criarMagalu(@RequestBody CriarIntegracaoRequest request) {
+        return resumo(integracaoService.criarMagalu(request.lojaProprietaria()));
+    }
+
+    @PostMapping("/{id}/magalu/autorizacao")
+    public UrlAutorizacaoResponse iniciarAutorizacaoMagalu(@PathVariable Long id) {
+        return new UrlAutorizacaoResponse(integracaoService.iniciarAutorizacaoMagalu(id));
+    }
+
+    @GetMapping("/magalu/callback")
+    public IntegracaoResponse callbackMagalu(
+            @RequestParam String code,
+            @RequestParam String state,
+            @RequestParam(required = false, name = "tenant_id") String tenantId) {
+        return resumo(integracaoService.concluirAutorizacaoMagalu(code, state, tenantId));
+    }
+
     @PostMapping("/{id}/shopee/autorizacao")
     public UrlAutorizacaoResponse iniciarAutorizacaoShopee(@PathVariable Long id) {
         return new UrlAutorizacaoResponse(integracaoService.iniciarAutorizacaoShopee(id));
