@@ -193,7 +193,8 @@ public class MarketplaceController {
 
     private IntegracaoResponse resumo(IntegracaoMarketplace i, String diagnostico) {
         return new IntegracaoResponse(i.getId(), i.getLojaProprietaria(), i.getMarketplace(), i.getStatus(),
-                i.getIdentificadorExterno(), i.getTokenExpiraEm(), i.getUltimaSincronizacao(), diagnostico);
+                i.getIdentificadorExterno(), i.getSellerId(), i.getSellerAlias(),
+                i.getTokenExpiraEm(), i.getUltimaSincronizacao(), diagnostico);
     }
 
     private PublicacaoResponse publicacao(PublicacaoMarketplace p) {
