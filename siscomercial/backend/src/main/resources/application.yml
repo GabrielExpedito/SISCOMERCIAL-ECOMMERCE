@@ -81,7 +81,7 @@ siscomercial:
     api-base-url: ${MAGALU_API_BASE_URL:https://api.magalu.com}
     auth-url: ${MAGALU_AUTH_URL:https://id.magalu.com/login}
     token-url: ${MAGALU_TOKEN_URL:https://id.magalu.com/oauth/token}
-    scopes: ${MAGALU_SCOPES:open:portfolio-skus-seller:read open:portfolio-skus-seller:write open:portfolio-categories-seller:read open:portfolio-prices-seller:read open:portfolio-prices-seller:write open:portfolio-stocks-seller:read open:portfolio-stocks-seller:write}
+    scopes: ${MAGALU_SCOPES:open:portfolio-skus-seller:read open:portfolio-skus-seller:write open:portfolio-categories-seller:read open:portfolio-categories-channel:read open:portfolio-prices-seller:read open:portfolio-prices-seller:write open:portfolio-stocks-seller:read open:portfolio-stocks-seller:write}
 
   amazon:
     client-id: ${AMAZON_LWA_CLIENT_ID:}
