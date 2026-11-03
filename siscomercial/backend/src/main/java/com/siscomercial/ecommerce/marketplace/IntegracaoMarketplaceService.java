@@ -46,6 +46,7 @@ public class IntegracaoMarketplaceService {
     @Value("${siscomercial.magalu.redirect-uri:}") private String magaluRedirectUri;
     @Value("${siscomercial.magalu.auth-url:https://id.magalu.com/login}") private String magaluAuthUrl;
     @Value("${siscomercial.magalu.token-url:https://id.magalu.com/oauth/token}") private String magaluTokenUrl;
+    @Value("${siscomercial.magalu.api-base-url:https://api.magalu.com}") private String magaluApiBaseUrl;
     @Value("${siscomercial.magalu.scopes:}") private String magaluScopes;
 
     @Transactional
@@ -305,10 +306,26 @@ public class IntegracaoMarketplaceService {
             amazonAuthenticationService.obterAccessToken();
             return integracao;
         }
-        if (integracao.getMarketplace() != Marketplace.MERCADO_LIVRE || integracao.getTokenProtegido() == null) {
+        if (integracao.getTokenProtegido() == null || integracao.getTokenProtegido().isBlank()) {
             throw new RegraNegocioException("A integracao ainda nao possui credencial valida para diagnostico.");
         }
-        consultarUsuario(credencialService.revelar(integracao.getTokenProtegido()));
+        String accessToken = credencialService.revelar(integracao.getTokenProtegido());
+        if (integracao.getMarketplace() == Marketplace.MAGALU) {
+            JsonNode seller = consultarInformacoesSeller(accessToken);
+            String sellerId = seller.path("seller_id").asText(seller.path("id").asText(""));
+            if (sellerId.isBlank()) {
+                throw new RegraNegocioException("A API Magalu não retornou o identificador do seller.");
+            }
+            integracao.setSellerId(sellerId);
+            String sellerAlias = seller.path("seller_alias").asText(seller.path("name").asText(""));
+            integracao.setSellerAlias(sellerAlias.isBlank() ? null : sellerAlias);
+            integracao.setIdentificadorExterno(sellerId);
+            if (!sellerAlias.isBlank()) integracao.setLojaProprietaria(sellerAlias);
+        } else if (integracao.getMarketplace() == Marketplace.MERCADO_LIVRE) {
+            consultarUsuario(accessToken);
+        } else {
+            throw new RegraNegocioException("Diagnóstico ainda não implementado para este marketplace.");
+        }
         integracao.setUltimaSincronizacao(LocalDateTime.now());
         if (integracao.getStatus() == StatusIntegracaoMarketplace.ERRO) integracao.setStatus(StatusIntegracaoMarketplace.ATIVA);
         return repository.save(integracao);
@@ -387,11 +404,18 @@ public class IntegracaoMarketplaceService {
             if (!refreshToken.isBlank()) {
                 integracao.setCredenciaisProtegidas(credencialService.proteger(refreshToken));
             }
-            String userId = tenantId == null ? "" : tenantId.trim();
-            if (userId.isBlank()) userId = token.path("tenant_id").asText("");
-            if (userId.isBlank()) userId = token.path("user_id").asText("");
-            if (userId.isBlank()) userId = token.path("sub").asText("");
-            if (!userId.isBlank()) integracao.setIdentificadorExterno(userId);
+            // A identidade da conta seller é confirmada pela API oficial, não por parâmetros
+            // opcionais do callback OAuth (que documentadamente retorna code e state).
+            JsonNode seller = consultarInformacoesSeller(accessToken);
+            String sellerId = seller.path("seller_id").asText(seller.path("id").asText(""));
+            String sellerAlias = seller.path("seller_alias").asText(seller.path("name").asText(""));
+            if (sellerId.isBlank()) {
+                throw new RegraNegocioException("A API Magalu autenticou o token, mas não retornou o identificador do seller.");
+            }
+            integracao.setSellerId(sellerId);
+            integracao.setSellerAlias(sellerAlias.isBlank() ? null : sellerAlias);
+            integracao.setIdentificadorExterno(sellerId);
+            if (!sellerAlias.isBlank()) integracao.setLojaProprietaria(sellerAlias);
             integracao.setTokenExpiraEm(LocalDateTime.now().plusSeconds(token.path("expires_in").asLong(3600)));
             integracao.setUltimaSincronizacao(LocalDateTime.now());
             integracao.setOauthState(null);
@@ -403,6 +427,30 @@ public class IntegracaoMarketplaceService {
         } catch (Exception e) {
             log.warn("Magalu OAuth callback failed; causeType={}", e.getClass().getSimpleName());
             throw new RegraNegocioException("Falha ao concluir a autorização do Magalu.");
+        }
+    }
+
+    private JsonNode consultarInformacoesSeller(String accessToken) {
+        try {
+            String baseUrl = magaluApiBaseUrl.replaceAll("/+$", "");
+            HttpRequest request = HttpRequest.newBuilder(
+                            URI.create(baseUrl + "/seller/v1/portfolios/me"))
+                    .header("Authorization", "Bearer " + accessToken)
+                    .header("Accept", "application/json")
+                    .GET()
+                    .build();
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            if (response.statusCode() < 200 || response.statusCode() >= 300) {
+                log.warn("Magalu seller lookup failed; status={}", response.statusCode());
+                throw new RegraNegocioException("Falha ao consultar o seller Magalu (HTTP "
+                        + response.statusCode() + "). Verifique o escopo open:portfolio-skus-seller:read.");
+            }
+            return objectMapper.readTree(response.body());
+        } catch (RegraNegocioException e) {
+            throw e;
+        } catch (Exception e) {
+            log.warn("Magalu seller lookup failed; causeType={}", e.getClass().getSimpleName());
+            throw new RegraNegocioException("Falha ao consultar as informações do seller Magalu.");
         }
     }
 
