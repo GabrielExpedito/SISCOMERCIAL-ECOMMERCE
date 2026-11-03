@@ -31,6 +31,14 @@ public class IntegracaoMarketplace {
     @Column(name = "identificador_externo", nullable = false)
     private String identificadorExterno;
 
+    /** Identificador retornado pela API oficial de informações do seller Magalu. */
+    @Column(name = "seller_id", length = 120)
+    private String sellerId;
+
+    /** Nome/alias retornado pela API oficial de informações do seller Magalu. */
+    @Column(name = "seller_alias", length = 255)
+    private String sellerAlias;
+
     @JsonIgnore
     @ToString.Exclude
     @Column(name = "credenciais_protegidas", columnDefinition = "TEXT")
